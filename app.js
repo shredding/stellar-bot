@@ -19,7 +19,7 @@ async function bootstrap () {
 }
 
 process.on('unhandledRejection', (reason, p) => {
-  console.log(reason.stack)
+  console.log(p)
 });
 
 bootstrap()
