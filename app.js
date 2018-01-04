@@ -19,7 +19,6 @@ async function bootstrap () {
 }
 
 process.on('unhandledRejection', (reason, p) => {
-  console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
   console.log(reason.stack)
 });
 
