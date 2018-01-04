@@ -28,7 +28,7 @@ async function callReddit(func, data, client) {
     if (data) {
       return await client[func](data)
     } else {
-      return await client[func](data)
+      return await client[func]()
     }
   } catch (exc) {
     console.log(exc.name + ` - Failed to execute ${func} with data:`, data)
@@ -74,7 +74,7 @@ class Reddit extends Adapter {
 
   async pollComments (lastBatch) {
     lastBatch = lastBatch || []
-    console.log('pollComments', lastBatch.length)
+
     const start = Date.now()
     const comments = await callReddit('getNewComments', 'Stellar')
 
@@ -123,7 +123,7 @@ class Reddit extends Adapter {
       })
     })
 
-    lastBatch - comments
+    lastBatch = comments
     await utils.sleep(2000)
     this.pollComments(lastBatch)
   }
