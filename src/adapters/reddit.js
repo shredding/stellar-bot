@@ -26,14 +26,19 @@ async function callReddit(func, data, client) {
 
   try {
     if (data) {
-      return client[func](data)
+      return await client[func](data)
     } else {
-      return client[func](data)
+      return await client[func](data)
     }
   } catch (exc) {
-    console.log(`Failed to execute ${func} with data:`)
-    console.log(data)
+    console.log(exc.name + ` - Failed to execute ${func} with data:`, data)
   }
+}
+
+function removeDuplicates(orignal, listing, start) {
+  return listing.filter(function(post) {
+    return orignal.every(a => a.id != post.id) && post.created_utc >= start / 1000
+  })
 }
 
 function formatMessage(txt) {
@@ -50,8 +55,8 @@ function formatMessage(txt) {
 
 class Reddit extends Adapter {
 
-  onDeposit (sourceAccount, amount) {
-    callReddit('composeMessage', {
+  async onDeposit (sourceAccount, amount) {
+    await callReddit('composeMessage', {
       to: sourceAccount.uniqueId,
       subject: 'XLM Deposit',
       text: formatMessage(`Thank you. ${amount} XLM have been sucessfully deposited to your account.`)
@@ -60,65 +65,71 @@ class Reddit extends Adapter {
 
   constructor (config) {
     super(config)
-
-    const r = getR()
-    const client = new Snoostorm(r)
-
-    // +++ Looking for tips
-    const streamOpts = {
-        subreddit: 'Stellar',
-        results: 25
-    }
-
-    const comments = client.CommentStream(streamOpts)
-
     console.log('Start observing subreddits ...')
-    comments.on('comment', (comment) => {
-      const potentialTip = {
-        adapter: 'reddit',
-        sourceId: comment.author.name,
-        text: comment.body,
-        resolveTargetId: async () => {
-           const targetComment = await callReddit('getComment', comment.parent_id).fetch()
-           return targetComment.author.name
-        }
-      }
-      this.receivePotentialTip(potentialTip)
-        // +++ A successful tip has been made
-        .then((success) => {
-          console.log(`Tip from ${potentialTip.sourceId} to ${success.targetId}.`)
-          callReddit('reply', formatMessage(`Thank you. You tipped **${success.amount} XLM** to *${success.targetId}*.`), comment)
-        })
-        // ++ The tip has been rejected
-        .catch((status) => {
-          switch (status) {
-            case this.TIPP_STATUS_DO_NOTHING:
-              break;
-
-            case this.TIPP_STATUS_INSUFFICIENT_BALANCE:
-              callReddit('reply', formatMessage(`Sorry. I can not tip for you. Your balance is insufficient.`), comment)
-              break;
-
-            case this.TIPP_STATUS_TRANSFER_FAILED:
-              callReddit('reply', formatMessage(`I messed up, sorry. A developer will look into this. Your balance hasn't been touched.`), comment)
-              break;
-
-            case this.TIPP_STATUS_REFERENCE_ERROR:
-              callReddit('reply', formatMessage(`Don't tip yourself please.`), comment)
-
-            default:
-              callReddit('reply', formatMessage(`An unknown error occured. This shouldn't have happened. Please contact the bot.`), comment)
-              break;
-          }
-      })
-    })
+    this.pollComments()
 
     console.log('Start observing reddit private messages ...')
     this.pollMessages()
   }
 
+  async pollComments (lastBatch) {
+    lastBatch = lastBatch || []
+    console.log('pollComments', lastBatch.length)
+    const start = Date.now()
+    const comments = await callReddit('getNewComments', 'Stellar')
+
+    if (comments === undefined) {
+      return this.pollComments(lastBatch)
+    }
+
+    removeDuplicates(lastBatch, comments, start).forEach((comment) => {
+      const potentialTip = {
+        adapter: 'reddit',
+        sourceId: comment.author.name,
+        text: comment.body,
+        resolveTargetId: async () => {
+           const targetComment = await callReddit('getComment', comment.parent_id) || comment.author.name
+           return targetComment.author.name
+        }
+      }
+
+      this.receivePotentialTip(potentialTip)
+        // +++ A successful tip has been made
+        .then(async (success) => {
+          console.log(`Tip from ${potentialTip.sourceId} to ${success.targetId}.`)
+          await callReddit('reply', formatMessage(`Thank you. You tipped **${success.amount} XLM** to *${success.targetId}*.`), comment)
+        })
+        // ++ The tip has been rejected
+        .catch(async (status) => {
+          switch (status) {
+            case this.TIPP_STATUS_DO_NOTHING:
+              break;
+
+            case this.TIPP_STATUS_INSUFFICIENT_BALANCE:
+              await callReddit('reply', formatMessage(`Sorry. I can not tip for you. Your balance is insufficient.`), comment)
+              break;
+
+            case this.TIPP_STATUS_TRANSFER_FAILED:
+              await callReddit('reply', formatMessage(`I messed up, sorry. A developer will look into this. Your balance hasn't been touched.`), comment)
+              break;
+
+            case this.TIPP_STATUS_REFERENCE_ERROR:
+              await callReddit('reply', formatMessage(`Don't tip yourself please.`), comment)
+
+            default:
+              await callReddit('reply', formatMessage(`An unknown error occured. This shouldn't have happened. Please contact the bot.`), comment)
+              break;
+          }
+      })
+    })
+
+    lastBatch - comments
+    await utils.sleep(2000)
+    this.pollComments(lastBatch)
+  }
+
   async pollMessages () {
-    const messages = await callReddit('getUnreadMessages')
+    const messages = await callReddit('getUnreadMessages') || []
     let processedMessages = []
 
     await messages
@@ -127,13 +138,13 @@ class Reddit extends Adapter {
            // Check the balance of the user
         if (m.subject === 'Balance') {
           const balance = await this.requestBalance('reddit', m.author.name)
-          callReddit('composeMessage', {
+          await callReddit('composeMessage', {
             to: m.author.name,
             subject: 'XLM Balance',
             text: formatMessage(`Thank you. Your current balance is ${balance} XLM.`)
           })
           console.log(`Balance request answered for ${m.author.name}.`)
-          callReddit('markMessagesAsRead', [m])
+          await callReddit('markMessagesAsRead', [m])
         }
 
         if (m.subject === 'Withdraw') {
@@ -141,18 +152,18 @@ class Reddit extends Adapter {
 
           if (!extract) {
             console.log(`XML withdrawal failed - unparsable message from ${m.author.name}.`)
-            callReddit('composeMessage', {
+            await callReddit('composeMessage', {
               to: m.author.name,
               subject: 'XLM Withdrawal failed',
               text: formatMessage(`We could not withdraw. Please make sure that the first line of the body is withdrawal amount and the second line your public key.`)
             })
-            callReddit('markMessagesAsRead', [m])
+            await callReddit('markMessagesAsRead', [m])
           } else {
             try {
               console.log(`XML withdrawal initiated for ${m.author.name}.`)
-              callReddit('markMessagesAsRead', [m])
+              await callReddit('markMessagesAsRead', [m])
               await this.receiveWithdrawalRequest('reddit', m.author.name, extract, m.id)
-              callReddit('composeMessage', {
+              await callReddit('composeMessage', {
                 to: m.author.name,
                 subject: 'XLM Withdrawal',
                 text: formatMessage(`Thank's for your request. ${extract.amount.toFixed(7)} XLM are on their way to ${extract.address}.`)
@@ -161,7 +172,7 @@ class Reddit extends Adapter {
               switch (exc) {
                 case this.WITHDRAWAL_STATUS_INSUFFICIENT_BALANCE:
                   console.log(`XML withdrawal failed - insufficient balance for ${m.author.name}.`)
-                  callReddit('composeMessage', {
+                  await callReddit('composeMessage', {
                     to: m.author.name,
                     subject: 'XLM Withdrawal failed',
                     text: formatMessage(`We could not withdraw. You requested more than your current balance. Please adjust and try again.`)
@@ -169,7 +180,7 @@ class Reddit extends Adapter {
                   break
                 case this.WITHDRAWAL_STATUS_DESTINATION_ACCOUNT_DOES_NOT_EXIST:
                   console.log(`XML withdrawal failed - no public address for ${m.author.name}.`)
-                  callReddit('composeMessage', {
+                  await callReddit('composeMessage', {
                     to: m.author.name,
                     subject: 'XLM Withdrawal failed',
                     text: formatMessage(`We could not withdraw. The requested public address does not exist.`)
@@ -185,13 +196,13 @@ class Reddit extends Adapter {
                   break;
               }
             }
-            callReddit('markMessagesAsRead', [m])
+            await callReddit('markMessagesAsRead', [m])
           }
         }
     })
 
     await utils.sleep(2000)
-    return this.pollMessages()
+    this.pollMessages()
   }
 
 }
