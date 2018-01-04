@@ -17,7 +17,7 @@
     "mocha": "^4.1.0"
   },
   "scripts": {
-    "app": "node app.js",
+    "app": "node --trace-warnings app.js",
     "tests": "NODE_ENV=test node_modules/mocha/bin/mocha",
     "backup": "ssh root@stellar \"docker exec -t db pg_dumpall -c -U postgres\" > backups/dump_`date +%d-%m-%Y'_'%H_%M_%S`.sql",
     "deployment": "ssh root@stellar 'cd /root/stellar-bot && ./run.sh'",
