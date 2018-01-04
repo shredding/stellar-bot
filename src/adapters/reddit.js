@@ -118,6 +118,7 @@ class Reddit extends Adapter {
           const extract = utils.extractWithdrawal(m.body_html)
 
           if (!extract) {
+            console.log(`XML withdrawal failed - unparsable message from ${m.author.name}.`)
             r.composeMessage({
               to: m.author.name,
               subject: 'XLM Withdrawal failed',
@@ -126,6 +127,7 @@ class Reddit extends Adapter {
             r.markMessagesAsRead([m])
           } else {
             try {
+              console.log(`XML withdrawal initiated for ${m.author.name}.`)
               r.markMessagesAsRead([m])
               await this.receiveWithdrawalRequest('reddit', m.author.name, extract, m.id)
               r.composeMessage({
@@ -136,6 +138,7 @@ class Reddit extends Adapter {
             } catch (exc) {
               switch (exc) {
                 case this.WITHDRAWAL_STATUS_INSUFFICIENT_BALANCE:
+                  console.log(`XML withdrawal failed - insufficient balance for ${m.author.name}.`)
                   r.composeMessage({
                     to: m.author.name,
                     subject: 'XLM Withdrawal failed',
@@ -143,6 +146,7 @@ class Reddit extends Adapter {
                   })
                   break
                 case this.WITHDRAWAL_STATUS_DESTINATION_ACCOUNT_DOES_NOT_EXIST:
+                  console.log(`XML withdrawal failed - no public address for ${m.author.name}.`)
                   r.composeMessage({
                     to: m.author.name,
                     subject: 'XLM Withdrawal failed',
@@ -150,6 +154,7 @@ class Reddit extends Adapter {
                   })
                   break
                 default:
+                  console.log(`XML withdrawal failed - unknown error for ${m.author.name}.`)
                   r.composeMessage({
                     to: m.author.name,
                     subject: 'XLM Withdrawal failed',
