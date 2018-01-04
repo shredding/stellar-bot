@@ -64,5 +64,13 @@ Run the app:
 npm run app
 ```
 
+## Donate
+
+If you want to support the development of the bot, please send XLM to:
+
+`GC2BDQ6BCDCIYLPHFGZKO4DJ3L3LQ4KTG3IZYF4M4UDBC3V2CZBZH3TU`
+
+Thank you very much!
+
 Enjoy.
 
