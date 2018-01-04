@@ -13,7 +13,9 @@ function getR() {
   })
 
   r.config({
-    continueAfterRatelimitError: true
+    continueAfterRatelimitError: true,
+    warnings: false,
+    maxRetryAttempts: 10
   })
 
   return r
