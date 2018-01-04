@@ -3,14 +3,20 @@ const Snoostorm = require('snoostorm')
 const Adapter = require('./abstract')
 const utils = require('../utils')
 
-function getR() {
-  return new Snoowrap({
+function getR(config) {
+  const r = new Snoowrap({
     userAgent: process.env.REDDIT_USER,
     clientId: process.env.REDDIT_CLIENT_ID,
     clientSecret: process.env.REDDIT_CLIENT_SECRET,
     username: process.env.REDDIT_USER,
-    password: process.env.REDDIT_PASS
+    password: process.env.REDDIT_PASS,
   })
+
+  r.config({
+    continueAfterRatelimitError: true
+  })
+
+  return r
 }
 
 function formatMessage(txt) {
@@ -81,7 +87,7 @@ class Reddit extends Adapter {
               break;
 
             case this.TIPP_STATUS_REFERENCE_ERROR:
-              comment.reply(formatMessage(`Don't tip yourself please..`))
+              comment.reply(formatMessage(`Don't tip yourself please.`))
 
             default:
               comment.reply(formatMessage(`An unknown error occured. This shouldn't have happened. Please contact the bot.`))
