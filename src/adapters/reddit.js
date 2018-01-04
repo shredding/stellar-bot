@@ -88,10 +88,16 @@ class Reddit extends Adapter {
         sourceId: comment.author.name,
         text: comment.body,
         resolveTargetId: async () => {
-           const targetComment = await callReddit('getComment', comment.parent_id) || comment.author.name
+           const targetComment = await callReddit('getComment', comment.parent_id)
+
+           if (!targetComment) {
+             return undefined
+           }
            return targetComment.author.name
         }
       }
+
+      console.log(potentialTip)
 
       this.receivePotentialTip(potentialTip)
         // +++ A successful tip has been made
