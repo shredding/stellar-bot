@@ -70,7 +70,7 @@ class Reddit extends Adapter {
         // +++ A successful tip has been made
         .then((success) => {
           console.log(`Tip from ${potentialTip.sourceId} to ${success.targetId}.`)
-          comment.reply(formatMessage(`Thank you. You tipped **${success.amount}** XLM to ${success.targetId}.`))
+          comment.reply(formatMessage(`Thank you. You tipped **${success.amount} XLM** to *${success.targetId}*.`))
         })
         // ++ The tip has been rejected
         .catch((status) => {
