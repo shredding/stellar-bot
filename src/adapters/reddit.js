@@ -114,10 +114,10 @@ class Reddit extends Adapter {
     super(config)
 
     console.log('Start observing subreddits ...')
-    // this.pollComments()
+    this.pollComments()
 
     console.log('Start observing reddit private messages ...')
-    // this.pollMessages()
+    this.pollMessages()
   }
 
   async pollComments (lastBatch) {

@@ -1,13 +1,18 @@
 const assert = require('assert')
 const Reddit = require('../src/adapters/reddit.js')
 
+class TestableReddit extends Reddit {
+  pollMessages () {}
+  pollComments () {}
+}
+
 describe('redditAdapter', async () => {
 
   let redditAdapter;
 
   beforeEach(async () => {
       const config = await require('./setup')()
-      redditAdapter = new Reddit(config)
+      redditAdapter = new TestableReddit(config)
   })
 
   describe('extractTipAmount', () => {
