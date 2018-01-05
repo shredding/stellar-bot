@@ -1,7 +1,5 @@
 const Snoowrap = require('snoowrap')
 const Adapter = require('./abstract')
-const Big = require('big.js')
-const StellarSdk = require('stellar-sdk')
 
 // *** +++ Reddit API +
 function getR() {
@@ -98,6 +96,15 @@ class Reddit extends Adapter {
     })
   }
 
+  async onWithdrawalInvalidAddress (uniqueId, address ,amount, hash) {
+    console.log(`XML withdrawal failed - invalid address ${address}.`)
+    await callReddit('composeMessage', {
+      to: address,
+      subject: 'XLM Withdrawal failed',
+      text: formatMessage(`We could not withdraw. The given address is not valid.`)
+    })
+  }
+
   async onWithdrawalSubmissionFailed (uniqueId, address, amount, hash) {
     this.emit('withdrawalSubmissionFailed ', uniqueId, address, amount, hash)
   }
@@ -185,7 +192,13 @@ class Reddit extends Adapter {
           } else {
               console.log(`XML withdrawal initiated for ${m.author.name}.`)
               await callReddit('markMessagesAsRead', [m])
-              this.receiveWithdrawalRequest('reddit', m.author.name, extract, m.id)
+              this.receiveWithdrawalRequest({
+                adapter: 'reddit',
+                uniqueId: m.author.name,
+                amount: extract.amount,
+                address: extract.address,
+                hash: m.id
+              })
             }
           }
           await callReddit('markMessagesAsRead', [m])
@@ -198,7 +211,7 @@ class Reddit extends Adapter {
   extractTipAmount (tipText) {
     const matches =  tipText.match(/\+\+\+([\d\.]*)[\s{1}]?XLM/i)
     if (matches) {
-        return new Big(matches[1])
+        return matches[1]
     }
     return undefined
   }
@@ -208,12 +221,11 @@ class Reddit extends Adapter {
 
     if (parts.length === 2) {
       const amount = parts[0].match(/([\d\.]*)/)[0]
-      const address = StellarSdk.StrKey.isValidEd25519PublicKey(parts[1]) ? parts[1] : undefined
+      const address = parts[1]
 
       if (amount && address) {
         return {
-          amount: new Big(amount),
-          address: address
+          amount, address
         }
       }
       return undefined

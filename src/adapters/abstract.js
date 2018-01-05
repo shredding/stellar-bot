@@ -1,5 +1,6 @@
 const utils = require('../utils')
 const Big = require('big.js')
+const StellarSdk = require('stellar-sdk')
 const EventEmitter = require('events')
 
 class Adapter extends EventEmitter {
@@ -48,24 +49,28 @@ class Adapter extends EventEmitter {
   }
 
   // *** +++ Withdrawael Hook Functions +
-  async onWithdrawalReferenceError (uniqueId, extractAddress, amount, hash) {
-    this.emit('withdrawalReferenceError', uniqueId, extractAddress, amount, hash)
+  async onWithdrawalReferenceError (uniqueId, address, amount, hash) {
+    this.emit('withdrawalReferenceError', uniqueId, address, amount, hash)
   }
 
-  async onWithdrawalDestinationAccountDoesNotExist (uniqueId, extractAddress, amount, hash) {
-    this.emit('withdrawalDestinationAccountDoesNotExist', uniqueId, extractAddress, amount, hash)
+  async onWithdrawalDestinationAccountDoesNotExist (uniqueId, address, amount, hash) {
+    this.emit('withdrawalDestinationAccountDoesNotExist', uniqueId, address, amount, hash)
   }
 
-  async onWithdrawalFailedWithInsufficientBalance (uniqueId, extractAddress, amount, hash) {
-    this.emit('withdrawalFailedWithInsufficientBalance', uniqueId, extractAddress, amount, hash)
+  async onWithdrawalFailedWithInsufficientBalance (uniqueId, address, amount, hash) {
+    this.emit('withdrawalFailedWithInsufficientBalance', uniqueId, address, amount, hash)
   }
 
-  async onWithdrawalSubmissionFailed (uniqueId, extractAddress, amount, hash) {
-    this.emit('withdrawalSubmissionFailed ', uniqueId, extractAddress, amount, hash)
+  async onWithdrawalSubmissionFailed (uniqueId, address, amount, hash) {
+    this.emit('withdrawalSubmissionFailed ', uniqueId, address, amount, hash)
   }
 
-  async onWithdrawal (uniqueId, extractAddress, amount, hash) {
-    this.emit('withdrawal', uniqueId, extractAddress, amount, hash)
+  async onWithdrawalInvalidAddress (uniqueId, address ,amount, hash) {
+   this.emit('withdrawalInvalidAddress', uniqueId, address, amount, hash)
+  }
+
+  async onWithdrawal (uniqueId, address, amount, hash) {
+    this.emit('withdrawal', uniqueId, address, amount, hash)
   }
 
   /**
@@ -116,37 +121,55 @@ class Adapter extends EventEmitter {
    * Extract should be the result of utils.extractWithdrawal
    *
    * Hash should be a unique id (e.g. the message id)
+   *
+   * Should receive an object like this:
+   *
+   * {
+   *     adapter: 'reddit',
+   *     uniqueId: 'the-dark-coder'
+   *     address: 'aStellarAddress',
+   *     amount: '12.12'
+   *     hash: 'aUniqueHash'
+   * }
    */
-  receiveWithdrawalRequest (adapter, uniqueId, extract, hash) {
+  receiveWithdrawalRequest (withdrawalRequest) {
     return new Promise(async (resolve, reject) => {
 
-      const withdrawalAmount = new Big(extract.amount)
+      const withdrawalAmount = new Big(withdrawalRequest.amount)
+      const adapter = withdrawalRequest.adapter
+      const uniqueId = withdrawalRequest.uniqueId
+      const hash = withdrawalRequest.hash
+      const address = withdrawalRequest.address
+
+      if (!StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
+        return this.onWithdrawalInvalidAddress(uniqueId, address, withdrawalAmount.toFixed(7), hash)
+      }
 
       // Fetch the account
       const target = await this.Account.getOrCreate(adapter, uniqueId)
       if (!target.canPay(withdrawalAmount)) {
-        return this.onWithdrawalFailedWithInsufficientBalance(uniqueId, extractAddress, withdrawalAmount.toFixed(7), hash)
+        return this.onWithdrawalFailedWithInsufficientBalance(uniqueId, address, withdrawalAmount.toFixed(7), hash)
       }
 
       // Update it's balance
       await target.withdraw(withdrawalAmount)
 
       // ... and commit the withdrawal to the network
-      this.config.stellar.send(extract.address, withdrawalAmount.toFixed(7), hash)
+      this.config.stellar.send(address, withdrawalAmount.toFixed(7), hash)
         .then(() => {
-          this.onWithdrawal(uniqueId, extractAddress, withdrawalAmount.toFixed(7), hash)
+          this.onWithdrawal(uniqueId, address, withdrawalAmount.toFixed(7), hash)
         })
         .catch((data) => {
           switch (data.status) {
             case 'WITHDRAWAL_REFERENCE_ERROR':
-              this.onWithdrawalReferenceError(uniqueId, extractAddress, withdrawalAmount.toFixed(7), hash)
+              this.onWithdrawalReferenceError(uniqueId, address, withdrawalAmount.toFixed(7), hash)
               break
             case 'WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST':
-              this.onWithdrawalDestinationAccountDoesNotExist(uniqueId, extractAddress, withdrawalAmount.toFixed(7), hash)
+              this.onWithdrawalDestinationAccountDoesNotExist(uniqueId, address, withdrawalAmount.toFixed(7), hash)
               break
 
             default:
-              this.onWithdrawalSubmissionFailed(uniqueId, extractAddress, withdrawalAmount.toFixed(7), hash)
+              this.onWithdrawalSubmissionFailed(uniqueId, address, withdrawalAmount.toFixed(7), hash)
               break
           }
         })
