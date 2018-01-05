@@ -22,6 +22,8 @@ module.exports = async function (models) {
     callBuilder.cursor(latestTx.cursor)
   }
 
+  // What happens here if latestTx is null for any reason?
+
   console.log('Start streaming txns ...')
   callBuilder.stream({
     onmessage: (record) => {
