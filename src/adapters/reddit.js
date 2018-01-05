@@ -1,6 +1,6 @@
 const Snoowrap = require('snoowrap')
 const Snoostorm = require('snoostorm')
-const Adapter = require('./abstractAdapter')
+const Adapter = require('./abstract-adapter')
 const utils = require('../utils')
 const Big = require('big.js')
 const StellarSdk = require('stellar-sdk')
