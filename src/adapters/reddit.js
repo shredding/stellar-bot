@@ -35,9 +35,9 @@ async function callReddit(func, data, client) {
   }
 }
 
-function removeDuplicates(orignal, listing, start) {
+function removeDuplicates(orignal, listing) {
   return listing.filter(function(post) {
-    return orignal.every(a => a.id != post.id) && post.created_utc >= start / 1000
+    return orignal.every(a => a.id != post.id)
   })
 }
 
@@ -75,14 +75,13 @@ class Reddit extends Adapter {
   async pollComments (lastBatch) {
     lastBatch = lastBatch || []
 
-    const start = Date.now()
     const comments = await callReddit('getNewComments', 'Stellar')
 
     if (comments === undefined) {
       return this.pollComments(lastBatch)
     }
 
-    removeDuplicates(lastBatch, comments, start).forEach((comment) => {
+    removeDuplicates(lastBatch, comments).forEach((comment) => {
       const potentialTip = {
         adapter: 'reddit',
         sourceId: comment.author.name,
