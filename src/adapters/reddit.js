@@ -2,6 +2,8 @@ const Snoowrap = require('snoowrap')
 const Snoostorm = require('snoostorm')
 const Adapter = require('./abstractAdapter')
 const utils = require('../utils')
+const Big = require('big.js')
+const StellarSdk = require('stellar-sdk')
 
 function getR() {
   const r = new Snoowrap({
@@ -80,7 +82,7 @@ class Reddit extends Adapter {
     }
   }
 
-  sendDepositConfirmation (sourceAccount, amount) {
+  async sendDepositConfirmation (sourceAccount, amount) {
     await callReddit('composeMessage', {
       to: sourceAccount.uniqueId,
       subject: 'XLM Deposit',
