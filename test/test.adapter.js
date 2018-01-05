@@ -10,71 +10,77 @@ describe('adapter', async () => {
     adapter = new Adapter(config)
   })
 
+  describe('receiveWithdrawalRequest', () => {
+    it ('should call withdrawalInvalidAddress if invalid address is given', (done) => {
+      adapter.on('withdrawalInvalidAddress', () => done())
+      adapter.receiveWithdrawalRequest({
+        adapter: 'testing',
+        amount: '666',
+        uniqueId: 'foo',
+        hash: 'bar',
+        // someone gave her secret away :-(
+        address: 'SBEZDGJO5WYUKVCSE44MANQCJCNOVBPOBJF4RNSAQGKQVTYKOTRUSRNH'
+      })
+    })
+
+    it ('should call withdrawalFailedWithInsufficientBalance if withdrawal exceed balance', (done) => {
+      adapter.on('withdrawalFailedWithInsufficientBalance', () => done())
+      adapter.receiveWithdrawalRequest({
+        adapter: 'testing',
+        amount: '666',
+        uniqueId: 'foo',
+        hash: 'bar',
+        // someone gave her secret away :-(
+        address: 'GA2B3GCDNVMANF4TT44KJNYU7TBVTKWY5XWF3Q3BJAPXRPBHXAEIFGBD'
+      })
+    })
+  })
+
   describe('receivePotentialTip', () => {
-    it ('should reject with DO_NOTHING status if no tip included', (done) => {
+
+    it ('should call onTipWithInsufficientBalance if source cant pay', (done) => {
       let tip = {
-        text: 'the text to scan',
+        amount: '1.12',
         adapter: 'testing',
         sourceId: 'foo'
       }
 
-      adapter.receivePotentialTip(tip).catch((status) => {
-        assert.equal(adapter.TIPP_STATUS_DO_NOTHING, status)
-        done()
-      })
+      adapter.on('tipWithInsufficientBalance', () => done())
+      adapter.receivePotentialTip(tip)
+
     })
 
-    it ('should reject with INSUFICCIENT_BALANCE if source cant pay', (done) => {
-      let tip = {
-        text: '+++1 XLM',
-        adapter: 'testing',
-        sourceId: 'foo'
-      }
-      adapter.receivePotentialTip(tip).catch((status) => {
-        assert.equal(adapter.TIPP_STATUS_INSUFFICIENT_BALANCE, status)
-        done()
-      })
-    })
-
-    it ('should reject with TIPP_STATUS_REFERENCE_ERROR if one tips herself', (done) => {
+    it ('should reject with onTipReferenceError if one tips herself', (done) => {
       adapter.Account.createAsync({
         adapter: 'testing',
         uniqueId: 'foo',
         balance: '5.0000000'
       }).then(() => {
         let tip = {
-          text: '+++1 XLM',
+          amount: '1',
           adapter: 'testing',
           sourceId: 'foo',
-          resolveTargetId: () => {
-            return 'foo'
-          }
+          targetId: 'foo'
         }
-        adapter.receivePotentialTip(tip).catch((status) => {
-          assert.equal(adapter.TIPP_STATUS_REFERENCE_ERROR, status)
-          done()
-        })
+        adapter.on('tipReferenceError', () => done())
+        adapter.receivePotentialTip(tip)
       })
     })
 
-    it ('should transfer money and resolve with TIPP_STATUS_TIPPED', (done) => {
+    it ('should transfer money and call with onTip', (done) => {
       adapter.Account.createAsync({
         adapter: 'testing',
         uniqueId: 'foo',
         balance: '5.0000000'
       }).then(() => {
         let tip = {
-          text: '+++1 XLM',
+          amount: '1',
           adapter: 'testing',
           sourceId: 'foo',
-          resolveTargetId: () => {
-            return 'bar'
-          }
+          targetId: 'bar'
         }
-        adapter.receivePotentialTip(tip).then(async (success) => {
-          assert.equal(adapter.TIPP_STATUS_TIPPED, success.status)
-          assert.equal('bar', success.targetId)
-          assert.equal('1.0000000', success.amount)
+        adapter.on('tip', async (tip, amount) => {
+          assert.equal('1.0000000', amount)
 
           source = await adapter.Account.oneAsync({adapter: 'testing', uniqueId: 'foo'})
           target = await adapter.Account.oneAsync({adapter: 'testing', uniqueId: 'bar'})
@@ -83,6 +89,7 @@ describe('adapter', async () => {
           assert.equal(target.balance, '1.0000000')
           done()
         })
+        adapter.receivePotentialTip(tip)
       })
     })
   })

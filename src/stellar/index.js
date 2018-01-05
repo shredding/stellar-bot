@@ -75,11 +75,12 @@ module.exports = async function (models) {
     depositAddress: publicKey,
     events: events,
     send: function send(to, amount, hash) {
+      let data = {to, amount, hash}
       return new Promise(function (resolve, reject) {
         // Do not deposit to self, it wouldn't make sense
         if (to === publicKey) {
-          console.log('WITHDRAWAL_STATUS_REFERENECE_ERROR')
-          return reject('WITHDRAWAL_STATUS_REFERENECE_ERROR')
+          data.status = 'WITHDRAWAL_REFERENCE_ERROR'
+          return reject(data)
         }
 
         // First, check to make sure that the destination account exists.
@@ -88,8 +89,8 @@ module.exports = async function (models) {
         server.loadAccount(to)
           // If the account is not found, surface a nicer error message for logging.
           .catch(StellarSdk.NotFoundError, function (error) {
-            console.log('WITHDRAWAL_STATUS_DESTINATION_ACCOUNT_DOES_NOT_EXIST')
-            reject('WITHDRAWAL_STATUS_DESTINATION_ACCOUNT_DOES_NOT_EXIST')
+            data.status = 'WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST'
+            return reject(data)
           })
           // If there was no error, load up-to-date information on your account.
           .then(function() {
@@ -135,13 +136,13 @@ module.exports = async function (models) {
             return submitted
           })
           .then(async function(result) {
-            console.log(`Withdrawed ${amount} to ${publicKey}`)
-            resolve('WITHDRAWAL_STATUS_SUCCESS')
+            data.status = 'WITHDRAWAL_SUCCESS'
+            resolve(data)
           })
           .catch(function(error) {
             console.log('WITHDRAWAL_STATUS_SUBMISSION_FAILED')
             console.log(error)
-            reject('WITHDRAWAL_STATUS_SUBMISSION_FAILED')
+            reject('WITHDRAWAL_SUBMISSION_FAILED')
           })
         })
     }

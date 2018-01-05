@@ -1,80 +1,113 @@
 const utils = require('../utils')
 const Big = require('big.js')
+const StellarSdk = require('stellar-sdk')
+const EventEmitter = require('events')
 
-class Adapter {
+class Adapter extends EventEmitter {
 
   constructor (config) {
+    super()
+
     this.config = config
 
     this.Account = config.models.account
 
     this.Account.events.on('TRANSFER', this.onTransfer)
     this.Account.events.on('DEPOSIT', this.onDeposit)
-
-    this.TIPP_STATUS_DO_NOTHING = 'TIPP_STATUS_DO_NOTHING'
-    this.TIPP_STATUS_INSUFFICIENT_BALANCE = 'TIPP_STATUS_INSUFFICIENT_BALANCE'
-    this.TIPP_STATUS_TRANSFER_FAILED = 'TIPP_STATUS_TRANSFER_FAILED'
-    this.TIPP_STATUS_TIPPED = 'TIPP_STATUS_TIPPED'
-    this.TIPP_STATUS_REFERENCE_ERROR = 'TIPP_STATUS_REFERENCE_ERROR'
-
-    this.WITHDRAWAL_STATUS_INSUFFICIENT_BALANCE = 'WITHDRAWAL_STATUS_INSUFFICIENT_BALANCE'
-    this.WITHDRAWAL_STATUS_SUCCESS = 'WITHDRAWAL_STATUS_SUCCESS'
-    this.WITHDRAWAL_STATUS_DESTINATION_ACCOUNT_DOES_NOT_EXIST = 'WITHDRAWAL_STATUS_DESTINATION_ACCOUNT_DOES_NOT_EXIST'
-    this.WITHDRAWAL_STATUS_SUBMISSION_FAILED = 'WITHDRAWAL_STATUS_SUBMISSION_FAILED'
-    this.WITHDRAWAL_STATUS_REFERENECE_ERROR = 'WITHDRAWAL_STATUS_REFERENECE_ERROR'
-
   }
 
-  onTransfer (sourceAccount, targetAccount, amount) {
-    // Hook function
+  // *** +++ Transfer Hook Functions +
+  async onTransfer (sourceAccount, targetAccount, amount) {
+    // Override this or listen to events!
+    this.emit('transfer', sourceAccount, targetAccount, amount)
   }
 
-  onDeposit (sourceAccount, amount) {
-    // Hook
+  // *** +++ Deposit Hook Functions +
+  async onDeposit (sourceAccount, amount) {
+    // Override this or listen to events!
+    this.emit('deposit', sourceAccount, amount)
+  }
+
+  async onTipWithInsufficientBalance (potentialTip, amount) {
+    // Override this or listen to events!
+    this.emit('tipWithInsufficientBalance', potentialTip, amount)
+  }
+
+  async onTipTransferFailed (potentialTip, amount) {
+    // Override this or listen to events!
+    this.emit('tipTransferFailed', potentialTip, amount)
+  }
+
+  async onTipReferenceError (potentialTip, amount) {
+    // Override this or listen to events!
+    this.emit('tipReferenceError', potentialTip, amount)
+  }
+
+  async onTip (potentialTip, amount) {
+    // Override this or listen to events!
+    this.emit('tip', potentialTip, amount)
+  }
+
+  // *** +++ Withdrawael Hook Functions +
+  async onWithdrawalReferenceError (uniqueId, address, amount, hash) {
+    this.emit('withdrawalReferenceError', uniqueId, address, amount, hash)
+  }
+
+  async onWithdrawalDestinationAccountDoesNotExist (uniqueId, address, amount, hash) {
+    this.emit('withdrawalDestinationAccountDoesNotExist', uniqueId, address, amount, hash)
+  }
+
+  async onWithdrawalFailedWithInsufficientBalance (uniqueId, address, amount, hash) {
+    this.emit('withdrawalFailedWithInsufficientBalance', uniqueId, address, amount, hash)
+  }
+
+  async onWithdrawalSubmissionFailed (uniqueId, address, amount, hash) {
+    this.emit('withdrawalSubmissionFailed ', uniqueId, address, amount, hash)
+  }
+
+  async onWithdrawalInvalidAddress (uniqueId, address ,amount, hash) {
+   this.emit('withdrawalInvalidAddress', uniqueId, address, amount, hash)
+  }
+
+  async onWithdrawal (uniqueId, address, amount, hash) {
+    this.emit('withdrawal', uniqueId, address, amount, hash)
   }
 
   /**
    *  Should receive a tip object like:
    *
    *  {
-   *    text: "the text to scan",
    *    adapter: "adapter_name", (e.g. "reddit")
    *    sourceId: "unique_source_id", (e.g. reddit username)
-   *    resolveTargetId: async function that finally resolves the target id
+   *    targetId: "foo_bar" // the target id
+   *    amount: "123.12",
    *  }
+   *
+   *  You'll receive the tip object within every hook, so you can add stuff you need in the callbacks
    */
-  receivePotentialTip (tip) {
-    return new Promise(async (resolve, reject) => {
-
-      // Check if the text does contain a tip.
-      const payment = utils.extractPayment(tip.text)
-      if (!payment) {
-        return reject(this.TIPP_STATUS_DO_NOTHING)
-      }
-
+  async receivePotentialTip (tip) {
       // Let's see if the source has a sufficient balance
       const source = await this.Account.getOrCreate(tip.adapter, tip.sourceId)
+      const payment = new Big(tip.amount)
+
       if (!source.canPay(payment)) {
-        return reject(this.TIPP_STATUS_INSUFFICIENT_BALANCE)
+        return this.onTipWithInsufficientBalance(tip, payment.toFixed(7))
       }
 
-      // Fetch or create the recipient
-      const targetId = await tip.resolveTargetId()
-
-      if (!targetId) {
-        return reject(this.TIPP_STATUS_TRANSFER_FAILED)
-      }
-      if (tip.sourceId === targetId) {
-        return reject(this.TIPP_STATUS_REFERENCE_ERROR)
+      if (tip.sourceId === tip.targetId) {
+        return this.onTipReferenceError(tip, payment.toFixed(7))
       }
 
-      const target = await this.Account.getOrCreate(tip.adapter, targetId)
+      const target = await this.Account.getOrCreate(tip.adapter, tip.targetId)
 
       // ... and tip.
       source.transfer(target, payment)
-        .then(() => resolve({status: this.TIPP_STATUS_TIPPED, targetId: targetId, amount: payment.toFixed(7)}))
-        .catch(() => reject(this.TIPP_STATUS_TRANSFER_FAILED))
-    })
+        .then(() => {
+          this.onTip(tip, payment.toFixed(7))
+        })
+        .catch(() => {
+          this.onTipTransferFailed(tip, payment.toFixed(7))
+        })
   }
 
   requestBalance (adapter, uniqueId) {
@@ -88,25 +121,58 @@ class Adapter {
    * Extract should be the result of utils.extractWithdrawal
    *
    * Hash should be a unique id (e.g. the message id)
+   *
+   * Should receive an object like this:
+   *
+   * {
+   *     adapter: 'reddit',
+   *     uniqueId: 'the-dark-coder'
+   *     address: 'aStellarAddress',
+   *     amount: '12.12'
+   *     hash: 'aUniqueHash'
+   * }
    */
-  receiveWithdrawalRequest (adapter, uniqueId, extract, hash) {
+  receiveWithdrawalRequest (withdrawalRequest) {
     return new Promise(async (resolve, reject) => {
 
-      const withdrawalAmount = new Big(extract.amount)
+      const withdrawalAmount = new Big(withdrawalRequest.amount)
+      const adapter = withdrawalRequest.adapter
+      const uniqueId = withdrawalRequest.uniqueId
+      const hash = withdrawalRequest.hash
+      const address = withdrawalRequest.address
+
+      if (!StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
+        return this.onWithdrawalInvalidAddress(uniqueId, address, withdrawalAmount.toFixed(7), hash)
+      }
 
       // Fetch the account
       const target = await this.Account.getOrCreate(adapter, uniqueId)
       if (!target.canPay(withdrawalAmount)) {
-        return reject(this.WITHDRAWAL_STATUS_INSUFFICIENT_BALANCE)
+        return this.onWithdrawalFailedWithInsufficientBalance(uniqueId, address, withdrawalAmount.toFixed(7), hash)
       }
 
       // Update it's balance
       await target.withdraw(withdrawalAmount)
 
       // ... and commit the withdrawal to the network
-      this.config.stellar.send(extract.address, withdrawalAmount.toFixed(7), hash)
-        .then(resolve)
-        .catch(reject)
+      this.config.stellar.send(address, withdrawalAmount.toFixed(7), hash)
+        .then(() => {
+          this.onWithdrawal(uniqueId, address, withdrawalAmount.toFixed(7), hash)
+        })
+        .catch((data) => {
+          switch (data.status) {
+            case 'WITHDRAWAL_REFERENCE_ERROR':
+              this.onWithdrawalReferenceError(uniqueId, address, withdrawalAmount.toFixed(7), hash)
+              break
+            case 'WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST':
+              this.onWithdrawalDestinationAccountDoesNotExist(uniqueId, address, withdrawalAmount.toFixed(7), hash)
+              break
+
+            default:
+              this.onWithdrawalSubmissionFailed(uniqueId, address, withdrawalAmount.toFixed(7), hash)
+              break
+          }
+        })
     })
   }
 }
