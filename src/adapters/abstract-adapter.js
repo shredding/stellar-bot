@@ -1,15 +1,14 @@
+const utils = require('../utils')
 const Big = require('big.js')
 const StellarSdk = require('stellar-sdk')
 const EventEmitter = require('events')
 
 class Adapter extends EventEmitter {
 
-  constructor (config, extractor) {
+  constructor (config) {
     super()
 
     this.config = config
-
-    this.Extractor = extractor
 
     this.Account = config.models.account
 
@@ -81,6 +80,19 @@ class Adapter extends EventEmitter {
   async sendTransferConfirmation (sourceAccount, amount) {
       // Override me
   }
+
+    /**
+     * // Being that each platform (Reddit, Twitter, Slack...) can have different
+     * means of initiating the tipping process, and may even have multiple,
+     * each adapter is responsible for handling the extraction of the tip amount
+     * from users' commands.
+     * @param tipText The original command given by the tipbot user
+     */
+  // extractTipAmount (tipText) {
+  //   // Override me
+  //     console.error("Abstract extractTipAmount() should not get called")
+  //     return undefined
+  // }
 
   /**
    *  Should receive a tip object like:
