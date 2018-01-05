@@ -1,6 +1,6 @@
 const Snoowrap = require('snoowrap')
 const Snoostorm = require('snoostorm')
-const Adapter = require('./abstract')
+const Adapter = require('./abstractAdapter')
 const utils = require('../utils')
 
 function getR() {
