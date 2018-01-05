@@ -1,21 +1,18 @@
 const utils = require('../utils')
 const Big = require('big.js')
+const EventEmitter = require('events')
 
-class Adapter {
+class Adapter extends EventEmitter {
 
   constructor (config) {
+    super()
+
     this.config = config
 
     this.Account = config.models.account
 
     this.Account.events.on('TRANSFER', this.onTransfer)
     this.Account.events.on('DEPOSIT', this.onDeposit)
-
-    this.TIPP_STATUS_DO_NOTHING = 'TIPP_STATUS_DO_NOTHING'
-    this.TIPP_STATUS_INSUFFICIENT_BALANCE = 'TIPP_STATUS_INSUFFICIENT_BALANCE'
-    this.TIPP_STATUS_TRANSFER_FAILED = 'TIPP_STATUS_TRANSFER_FAILED'
-    this.TIPP_STATUS_TIPPED = 'TIPP_STATUS_TIPPED'
-    this.TIPP_STATUS_REFERENCE_ERROR = 'TIPP_STATUS_REFERENCE_ERROR'
 
     this.WITHDRAWAL_STATUS_INSUFFICIENT_BALANCE = 'WITHDRAWAL_STATUS_INSUFFICIENT_BALANCE'
     this.WITHDRAWAL_STATUS_SUCCESS = 'WITHDRAWAL_STATUS_SUCCESS'
@@ -25,12 +22,39 @@ class Adapter {
 
   }
 
-  onTransfer (sourceAccount, targetAccount, amount) {
-    // Hook function
+  async onTransfer (sourceAccount, targetAccount, amount) {
+    // Override this or listen to events!
+    this.emit('transfer', sourceAccount, targetAccount, amount)
   }
 
-  onDeposit (sourceAccount, amount) {
-    // Hook
+  async onDeposit (sourceAccount, amount) {
+    // Override this or listen to events!
+    this.emit('deposit', sourceAccount, amount)
+  }
+
+  async onNoPotentialTip (potentialTip) {
+    // Override this or listen to events!
+    this.emit('noPotentialTip', potentialTip)
+  }
+
+  async onTipWithInsufficientBalance (potentialTip, amount) {
+    // Override this or listen to events!
+    this.emit('tipWithInsufficientBalance', potentialTip, amount)
+  }
+
+  async onTipTransferFailed (potentialTip, amount) {
+    // Override this or listen to events!
+    this.emit('tipTransferFailed', potentialTip, amount)
+  }
+
+  async onTipReferenceError (potentialTip, amount) {
+    // Override this or listen to events!
+    this.emit('tipReferenceError', potentialTip, amount)
+  }
+
+  async onTip (potentialTip, amount, resolvedTargetId) {
+    // Override this or listen to events!
+    this.emit('tip', potentialTip, amount, resolvedTargetId)
   }
 
   /**
@@ -40,41 +64,45 @@ class Adapter {
    *    text: "the text to scan",
    *    adapter: "adapter_name", (e.g. "reddit")
    *    sourceId: "unique_source_id", (e.g. reddit username)
-   *    resolveTargetId: async function that finally resolves the target id
+   *    targetId: "foo_bar" // the target id
+   *    resolveTargetId: async function that finally resolves the target id if you don't have it (optional)
    *  }
+   *
+   *  You'll receive the tip object within every hook, so you can add stuff you need in the callbacks
    */
-  receivePotentialTip (tip) {
-    return new Promise(async (resolve, reject) => {
-
+  async receivePotentialTip (tip) {
       // Check if the text does contain a tip.
       const payment = utils.extractPayment(tip.text)
       if (!payment) {
-        return reject(this.TIPP_STATUS_DO_NOTHING)
+        return this.onNoPotentialTip(tip)
       }
 
       // Let's see if the source has a sufficient balance
       const source = await this.Account.getOrCreate(tip.adapter, tip.sourceId)
       if (!source.canPay(payment)) {
-        return reject(this.TIPP_STATUS_INSUFFICIENT_BALANCE)
+        return this.onTipWithInsufficientBalance(tip, payment.toFixed(7))
       }
 
       // Fetch or create the recipient
-      const targetId = await tip.resolveTargetId()
+      const targetId = tip.targetId ? tip.targetId : await tip.resolveTargetId()
 
       if (!targetId) {
-        return reject(this.TIPP_STATUS_TRANSFER_FAILED)
+        return this.onTipTransferFailed(tip, payment.toFixed(7))
       }
       if (tip.sourceId === targetId) {
-        return reject(this.TIPP_STATUS_REFERENCE_ERROR)
+        return this.onTipReferenceError(tip, payment.toFixed(7))
       }
 
       const target = await this.Account.getOrCreate(tip.adapter, targetId)
 
       // ... and tip.
       source.transfer(target, payment)
-        .then(() => resolve({status: this.TIPP_STATUS_TIPPED, targetId: targetId, amount: payment.toFixed(7)}))
-        .catch(() => reject(this.TIPP_STATUS_TRANSFER_FAILED))
-    })
+        .then(() => {
+          this.onTip(tip, payment.toFixed(7), targetId)
+        })
+        .catch(() => {
+          this.onTipTransferFailed(tip, payment.toFixed(7))
+        })
   }
 
   requestBalance (adapter, uniqueId) {

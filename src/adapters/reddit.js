@@ -58,8 +58,26 @@ class Reddit extends Adapter {
     })
   }
 
+  async onTipWithInsufficientBalance (tip, amount) {
+    await callReddit('reply', formatMessage(`Sorry. I can not tip for you. Your balance is insufficient.`), tip.original)
+  }
+
+  async onTipTransferFailed(tip, amount) {
+    await callReddit('reply', formatMessage(`Sorry. I can not tip for you. Your balance is insufficient.`), tip.original)
+  }
+
+  async onTipReferenceError (tip, amount) {
+    await callReddit('reply', formatMessage(`Don't tip yourself please.`), tip.original)
+  }
+
+  async onTip (tip, amount, resolvedTargetId) {
+    console.log(`Tip from ${tip.sourceId} to ${resolvedTargetId}.`)
+    await callReddit('reply', formatMessage(`Thank you. You tipped **${payment} XLM** to *${success.targetId}*.`), tip.original)
+  }
+
   constructor (config) {
     super(config)
+
     console.log('Start observing subreddits ...')
     this.pollComments()
 
@@ -76,8 +94,10 @@ class Reddit extends Adapter {
       return this.pollComments(lastBatch)
     }
 
-    removeDuplicates(lastBatch, comments).forEach((comment) => {
-      const potentialTip = {
+    comments.filter((comment) => {
+      return lastBatch.every(batch => batch.id != comment.id)
+    }).forEach((comment) => {
+      this.receivePotentialTip({
         adapter: 'reddit',
         sourceId: comment.author.name,
         text: comment.body,
@@ -88,36 +108,8 @@ class Reddit extends Adapter {
              return undefined
            }
            return targetComment.author.name
-        }
-      }
-
-      this.receivePotentialTip(potentialTip)
-        // +++ A successful tip has been made
-        .then(async (success) => {
-          console.log(`Tip from ${potentialTip.sourceId} to ${success.targetId}.`)
-          await callReddit('reply', formatMessage(`Thank you. You tipped **${success.amount} XLM** to *${success.targetId}*.`), comment)
-        })
-        // ++ The tip has been rejected
-        .catch(async (status) => {
-          switch (status) {
-            case this.TIPP_STATUS_DO_NOTHING:
-              break;
-
-            case this.TIPP_STATUS_INSUFFICIENT_BALANCE:
-              await callReddit('reply', formatMessage(`Sorry. I can not tip for you. Your balance is insufficient.`), comment)
-              break;
-
-            case this.TIPP_STATUS_TRANSFER_FAILED:
-              await callReddit('reply', formatMessage(`I messed up, sorry. A developer will look into this. Your balance hasn't been touched.`), comment)
-              break;
-
-            case this.TIPP_STATUS_REFERENCE_ERROR:
-              await callReddit('reply', formatMessage(`Don't tip yourself please.`), comment)
-
-            default:
-              await callReddit('reply', formatMessage(`An unknown error occured. This shouldn't have happened. Please contact the bot.`), comment)
-              break;
-          }
+        },
+        original: comment
       })
     })
 
