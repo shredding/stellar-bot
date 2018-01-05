@@ -73,6 +73,27 @@ class Adapter extends EventEmitter {
     this.emit('withdrawal', uniqueId, address, amount, hash)
   }
 
+  async sendDepositConfirmation (sourceAccount, amount) {
+      // Override me
+  }
+
+  async sendTransferConfirmation (sourceAccount, amount) {
+      // Override me
+  }
+
+    /**
+     * // Being that each platform (Reddit, Twitter, Slack...) can have different
+     * means of initiating the tipping process, and may even have multiple,
+     * each adapter is responsible for handling the extraction of the tip amount
+     * from users' commands.
+     * @param tipText The original command given by the tipbot user
+     */
+  // extractTipAmount (tipText) {
+  //   // Override me
+  //     console.error("Abstract extractTipAmount() should not get called")
+  //     return undefined
+  // }
+
   /**
    *  Should receive a tip object like:
    *

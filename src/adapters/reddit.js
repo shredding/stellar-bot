@@ -1,5 +1,5 @@
 const Snoowrap = require('snoowrap')
-const Adapter = require('./abstract')
+const Adapter = require('./abstract-adapter')
 
 // *** +++ Reddit API +
 function getR() {
@@ -47,7 +47,7 @@ function formatMessage(txt) {
 
 class Reddit extends Adapter {
 
-  async onDeposit (sourceAccount, amount) {
+  async sendDepositConfirmation (sourceAccount, amount) {
     await callReddit('composeMessage', {
       to: sourceAccount.uniqueId,
       subject: 'XLM Deposit',
