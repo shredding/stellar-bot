@@ -55,7 +55,7 @@ PG_PASSWORD=
 Run the tests:
 
 ```
-npm run tests
+npm run test
 ```
 
 Run the app:

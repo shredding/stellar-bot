@@ -1,5 +1,4 @@
 const Snoowrap = require('snoowrap')
-const Snoostorm = require('snoostorm')
 const Adapter = require('./abstract')
 const utils = require('../utils')
 
