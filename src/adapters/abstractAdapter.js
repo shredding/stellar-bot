@@ -26,11 +26,33 @@ class Adapter {
   }
 
   onTransfer (sourceAccount, targetAccount, amount) {
-    // Hook function
+      this.sendTransferConfirmation(sourceAccount, amount)
+      // Can be overridden with call made to super.onTransfer for adding functionality
   }
 
   onDeposit (sourceAccount, amount) {
-    // Hook
+    this.sendDepositConfirmation(sourceAccount, amount)
+      // Can be overridden with call made to super.onDeposit for adding functionality
+  }
+
+  sendDepositConfirmation (sourceAccount, amount) {
+      // Override me
+  }
+
+  sendTransferConfirmation (sourceAccount, amount) {
+      // Override me
+  }
+
+    /**
+     * // Being that each platform (Reddit, Twitter, Slack...) can have different
+     * means of initiating the tipping process, and may even have multiple,
+     * each adapter is responsible for handling the extraction of the tip amount
+     * from users' commands.
+     * @param tipText The original command given by the tipbot user
+     */
+  extractTipAmount (tipText) {
+    // Override me
+      return undefined
   }
 
   /**
@@ -47,7 +69,7 @@ class Adapter {
     return new Promise(async (resolve, reject) => {
 
       // Check if the text does contain a tip.
-      const payment = utils.extractPayment(tip.text)
+      const payment = this.extractTipAmount(tip.text)
       if (!payment) {
         return reject(this.TIPP_STATUS_DO_NOTHING)
       }
