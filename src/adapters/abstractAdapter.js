@@ -25,21 +25,21 @@ class Adapter {
 
   }
 
-  onTransfer (sourceAccount, targetAccount, amount) {
+  async onTransfer (sourceAccount, targetAccount, amount) {
       this.sendTransferConfirmation(sourceAccount, amount)
       // Can be overridden with call made to super.onTransfer for adding functionality
   }
 
-  onDeposit (sourceAccount, amount) {
+  async onDeposit (sourceAccount, amount) {
     this.sendDepositConfirmation(sourceAccount, amount)
       // Can be overridden with call made to super.onDeposit for adding functionality
   }
 
-  sendDepositConfirmation (sourceAccount, amount) {
+  async sendDepositConfirmation (sourceAccount, amount) {
       // Override me
   }
 
-  sendTransferConfirmation (sourceAccount, amount) {
+  async sendTransferConfirmation (sourceAccount, amount) {
       // Override me
   }
 
