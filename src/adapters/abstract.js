@@ -13,25 +13,21 @@ class Adapter extends EventEmitter {
 
     this.Account.events.on('TRANSFER', this.onTransfer)
     this.Account.events.on('DEPOSIT', this.onDeposit)
-
-    this.WITHDRAWAL_STATUS_INSUFFICIENT_BALANCE = 'WITHDRAWAL_STATUS_INSUFFICIENT_BALANCE'
-    this.WITHDRAWAL_STATUS_SUCCESS = 'WITHDRAWAL_STATUS_SUCCESS'
-    this.WITHDRAWAL_STATUS_DESTINATION_ACCOUNT_DOES_NOT_EXIST = 'WITHDRAWAL_STATUS_DESTINATION_ACCOUNT_DOES_NOT_EXIST'
-    this.WITHDRAWAL_STATUS_SUBMISSION_FAILED = 'WITHDRAWAL_STATUS_SUBMISSION_FAILED'
-    this.WITHDRAWAL_STATUS_REFERENECE_ERROR = 'WITHDRAWAL_STATUS_REFERENECE_ERROR'
-
   }
 
+  // *** +++ Transfer Hook Functions +
   async onTransfer (sourceAccount, targetAccount, amount) {
     // Override this or listen to events!
     this.emit('transfer', sourceAccount, targetAccount, amount)
   }
 
+  // *** +++ Deposit Hook Functions +
   async onDeposit (sourceAccount, amount) {
     // Override this or listen to events!
     this.emit('deposit', sourceAccount, amount)
   }
 
+  // *** +++ Tip Hook Functions +
   async onNoPotentialTip (potentialTip) {
     // Override this or listen to events!
     this.emit('noPotentialTip', potentialTip)
@@ -55,6 +51,27 @@ class Adapter extends EventEmitter {
   async onTip (potentialTip, amount, resolvedTargetId) {
     // Override this or listen to events!
     this.emit('tip', potentialTip, amount, resolvedTargetId)
+  }
+
+  // *** +++ Withdrawael Hook Functions +
+  async onWithdrawalReferenceError (uniqueId, extractAddress, amount, hash) {
+    this.emit('withdrawalReferenceError', uniqueId, extractAddress, amount, hash)
+  }
+
+  async onWithdrawalDestinationAccountDoesNotExist (uniqueId, extractAddress, amount, hash) {
+    this.emit('withdrawalDestinationAccountDoesNotExist', uniqueId, extractAddress, amount, hash)
+  }
+
+  async onWithdrawalFailedWithInsufficientBalance (uniqueId, extractAddress, amount, hash) {
+    this.emit('withdrawalFailedWithInsufficientBalance', uniqueId, extractAddress, amount, hash)
+  }
+
+  async onWithdrawalSubmissionFailed (uniqueId, extractAddress, amount, hash) {
+    this.emit('withdrawalSubmissionFailed ', uniqueId, extractAddress, amount, hash)
+  }
+
+  async onWithdrawal (uniqueId, extractAddress, amount, hash) {
+    this.emit('withdrawal', uniqueId, extractAddress, amount, hash)
   }
 
   /**
@@ -125,7 +142,7 @@ class Adapter extends EventEmitter {
       // Fetch the account
       const target = await this.Account.getOrCreate(adapter, uniqueId)
       if (!target.canPay(withdrawalAmount)) {
-        return reject(this.WITHDRAWAL_STATUS_INSUFFICIENT_BALANCE)
+        return this.onWithdrawalFailedWithInsufficientBalance(uniqueId, extractAddress, withdrawalAmount.toFixed(7), hash)
       }
 
       // Update it's balance
@@ -133,8 +150,23 @@ class Adapter extends EventEmitter {
 
       // ... and commit the withdrawal to the network
       this.config.stellar.send(extract.address, withdrawalAmount.toFixed(7), hash)
-        .then(resolve)
-        .catch(reject)
+        .then(() => {
+          this.onWithdrawal(uniqueId, extractAddress, withdrawalAmount.toFixed(7), hash)
+        })
+        .catch((data) => {
+          switch (data.status) {
+            case 'WITHDRAWAL_REFERENCE_ERROR':
+              this.onWithdrawalReferenceError(uniqueId, extractAddress, withdrawalAmount.toFixed(7), hash)
+              break
+            case 'WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST':
+              this.onWithdrawalDestinationAccountDoesNotExist(uniqueId, extractAddress, withdrawalAmount.toFixed(7), hash)
+              break
+
+            default:
+              this.onWithdrawalSubmissionFailed(uniqueId, extractAddress, withdrawalAmount.toFixed(7), hash)
+              break
+          }
+        })
     })
   }
 }

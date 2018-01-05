@@ -75,6 +75,45 @@ class Reddit extends Adapter {
     await callReddit('reply', formatMessage(`Thank you. You tipped **${payment} XLM** to *${success.targetId}*.`), tip.original)
   }
 
+  async onWithdrawalReferenceError (uniqueId, address, amount, hash) {
+    console.log(`XML withdrawal failed - unknown error for ${uniqueId}.`)
+    exeucte('composeMessage', {
+      to: uniqueId,
+      subject: 'XLM Withdrawal failed',
+      text: formatMessage(`An unknown error occured. This shouldn't have happened. Please contact the bot.`)
+    })
+  }
+
+  async onWithdrawalDestinationAccountDoesNotExist (uniqueId, address, amount, hash) {
+    console.log(`XML withdrawal failed - no public address for ${uniqueId}.`)
+    await callReddit('composeMessage', {
+      to: uniqueId,
+      subject: 'XLM Withdrawal failed',
+      text: formatMessage(`We could not withdraw. The requested public address does not exist.`)
+    })
+  }
+
+  async onWithdrawalFailedWithInsufficientBalance (uniqueId, address, amount, hash) {
+    console.log(`XML withdrawal failed - insufficient balance for ${uniqueId}.`)
+    await callReddit('composeMessage', {
+      to: address,
+      subject: 'XLM Withdrawal failed',
+      text: formatMessage(`We could not withdraw. You requested more than your current balance. Please adjust and try again.`)
+    })
+  }
+
+  async onWithdrawalSubmissionFailed (uniqueId, address, amount, hash) {
+    this.emit('withdrawalSubmissionFailed ', uniqueId, address, amount, hash)
+  }
+
+  async onWithdrawal (uniqueId, address, amount, hash) {
+    await callReddit('composeMessage', {
+      to: uniqueId,
+      subject: 'XLM Withdrawal',
+      text: formatMessage(`Thank's for your request. ${amount} XLM are on their way to ${address}.`)
+    })
+  }
+
   constructor (config) {
     super(config)
 
@@ -147,54 +186,18 @@ class Reddit extends Adapter {
               subject: 'XLM Withdrawal failed',
               text: formatMessage(`We could not withdraw. Please make sure that the first line of the body is withdrawal amount and the second line your public key.`)
             })
-            await callReddit('markMessagesAsRead', [m])
           } else {
-            try {
               console.log(`XML withdrawal initiated for ${m.author.name}.`)
               await callReddit('markMessagesAsRead', [m])
-              await this.receiveWithdrawalRequest('reddit', m.author.name, extract, m.id)
-              await callReddit('composeMessage', {
-                to: m.author.name,
-                subject: 'XLM Withdrawal',
-                text: formatMessage(`Thank's for your request. ${extract.amount.toFixed(7)} XLM are on their way to ${extract.address}.`)
-              })
-            } catch (exc) {
-              switch (exc) {
-                case this.WITHDRAWAL_STATUS_INSUFFICIENT_BALANCE:
-                  console.log(`XML withdrawal failed - insufficient balance for ${m.author.name}.`)
-                  await callReddit('composeMessage', {
-                    to: m.author.name,
-                    subject: 'XLM Withdrawal failed',
-                    text: formatMessage(`We could not withdraw. You requested more than your current balance. Please adjust and try again.`)
-                  })
-                  break
-                case this.WITHDRAWAL_STATUS_DESTINATION_ACCOUNT_DOES_NOT_EXIST:
-                  console.log(`XML withdrawal failed - no public address for ${m.author.name}.`)
-                  await callReddit('composeMessage', {
-                    to: m.author.name,
-                    subject: 'XLM Withdrawal failed',
-                    text: formatMessage(`We could not withdraw. The requested public address does not exist.`)
-                  })
-                  break
-                default:
-                  console.log(`XML withdrawal failed - unknown error for ${m.author.name}.`)
-                  exeucte('composeMessage', {
-                    to: m.author.name,
-                    subject: 'XLM Withdrawal failed',
-                    text: formatMessage(`An unknown error occured. This shouldn't have happened. Please contact the bot.`)
-                  })
-                  break;
-              }
+              this.receiveWithdrawalRequest('reddit', m.author.name, extract, m.id)
             }
-            await callReddit('markMessagesAsRead', [m])
           }
-        }
-    })
+          await callReddit('markMessagesAsRead', [m])
+      })
 
     await utils.sleep(2000)
     this.pollMessages()
   }
-
 }
 
 module.exports = Reddit
