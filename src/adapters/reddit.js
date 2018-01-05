@@ -96,8 +96,6 @@ class Reddit extends Adapter {
         }
       }
 
-      console.log(potentialTip)
-
       this.receivePotentialTip(potentialTip)
         // +++ A successful tip has been made
         .then(async (success) => {
