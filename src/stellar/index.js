@@ -21,8 +21,7 @@ module.exports = async function (models) {
   if (latestTx) {
     callBuilder.cursor(latestTx.cursor)
   }
-
-
+  
   console.log('Start streaming txns ...')
   callBuilder.stream({
     onmessage: (record) => {
