@@ -24,11 +24,7 @@ async function callReddit(func, data, client) {
   client = client || getR()
 
   try {
-    if (data) {
-      return await client[func](data)
-    } else {
-      return await client[func]()
-    }
+    return await client[func](data)
   } catch (exc) {
     console.log(exc.name + ` - Failed to execute ${func} with data:`, data)
   }
