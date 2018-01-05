@@ -1,5 +1,6 @@
 const Snoowrap = require('snoowrap')
 const Adapter = require('./abstract-adapter')
+const RedditExtractor = require('./src/extractors/reddit-extractor')
 
 // *** +++ Reddit API +
 function getR() {
@@ -118,7 +119,7 @@ class Reddit extends Adapter {
   }
 
   constructor (config) {
-    super(config)
+    super(config, RedditExtractor())
 
     console.log('Start observing subreddits ...')
     this.pollComments()
@@ -140,7 +141,7 @@ class Reddit extends Adapter {
       return lastBatch.every(batch => batch.id != comment.id)
     }).forEach(async (comment) => {
 
-      const tipAmount = this.extractTipAmount(comment.body)
+      const tipAmount = this.Extractor.extractTipAmount(comment.body)
       if (tipAmount) {
         const targetComment = await callReddit('getComment', comment.parent_id)
         if (targetComment) {
@@ -180,7 +181,7 @@ class Reddit extends Adapter {
         }
 
         if (m.subject === 'Withdraw') {
-          const extract = this.extractWithdrawal(m.body_html)
+          const extract = this.Extractor.extractWithdrawal(m.body_html)
 
           if (!extract) {
             console.log(`XML withdrawal failed - unparsable message from ${m.author.name}.`)
@@ -208,29 +209,6 @@ class Reddit extends Adapter {
     this.pollMessages()
   }
 
-  extractTipAmount (tipText) {
-    const matches =  tipText.match(/\+\+\+([\d\.]*)[\s{1}]?XLM/i)
-    if (matches) {
-        return matches[1]
-    }
-    return undefined
-  }
-
-  extractWithdrawal (body) {
-    const parts = body.slice(body.indexOf('<p>') + 3, body.indexOf('</p>')).split('\n')
-
-    if (parts.length === 2) {
-      const amount = parts[0].match(/([\d\.]*)/)[0]
-      const address = parts[1]
-
-      if (amount && address) {
-        return {
-          amount, address
-        }
-      }
-      return undefined
-    }
-  }
 }
 
 module.exports = Reddit
