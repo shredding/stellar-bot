@@ -83,6 +83,9 @@ class Adapter {
       // Fetch or create the recipient
       const targetId = await tip.resolveTargetId()
 
+      if (!targetId) {
+        return reject(this.TIPP_STATUS_TRANSFER_FAILED)
+      }
       if (tip.sourceId === targetId) {
         return reject(this.TIPP_STATUS_REFERENCE_ERROR)
       }

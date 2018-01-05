@@ -10,7 +10,7 @@ Check out the repo and install dependencies:
 npm install
 ```
 
-Fire up a postgres container and create to databases:
+Fire up a postgres container and create two databases:
 
 ```
 docker run -itd --name db -p 5455:5432 postgres:latest
@@ -26,7 +26,7 @@ MODE=development
 PG_USER=postgres
 PG_HOST=localhost
 PG_PORT=5455
-PG_NAME=tipbot
+PG_NAME=stellar
 PG_PASSWORD=
 
 STELLAR_HORIZON=https://horizon-testnet.stellar.org
@@ -46,7 +46,7 @@ MODE=testing
 PG_USER=postgres
 PG_HOST=localhost
 PG_PORT=5455
-PG_NAME=tipbot_testing
+PG_NAME=stellar_testing
 PG_PASSWORD=
 ```
 
@@ -63,6 +63,14 @@ Run the app:
 ```
 npm run app
 ```
+
+## Donate
+
+If you want to support the development of the bot, please send XLM to:
+
+`GC2BDQ6BCDCIYLPHFGZKO4DJ3L3LQ4KTG3IZYF4M4UDBC3V2CZBZH3TU`
+
+Thank you very much!
 
 Enjoy.
 
