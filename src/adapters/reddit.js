@@ -27,7 +27,32 @@ function formatMessage(txt) {
 
 class Reddit extends Adapter {
 
-  onDeposit (sourceAccount, amount) {
+  extractTipAmount (tipText) {
+    const matches =  tipText.match(/\+\+\+([\d\.]*)[\s{1}]?XLM/i)
+    if (matches) {
+        return new Big(matches[1])
+    }
+    return undefined
+  }
+
+  extractWithdrawal (body) {
+    const parts = body.slice(body.indexOf('<p>') + 3, body.indexOf('</p>')).split('\n')
+
+    if (parts.length === 2) {
+      const amount = parts[0].match(/([\d\.]*)/)[0]
+      const address = StellarSdk.StrKey.isValidEd25519PublicKey(parts[1]) ? parts[1] : undefined
+
+      if (amount && address) {
+        return {
+          amount: new Big(amount),
+          address: address
+        }
+      }
+      return undefined
+    }
+  }
+
+  sendDepositConfirmation (sourceAccount, amount) {
     getR().composeMessage({
       to: sourceAccount.uniqueId,
       subject: 'XLM Deposit',
