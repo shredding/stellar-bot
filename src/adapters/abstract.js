@@ -27,12 +27,6 @@ class Adapter extends EventEmitter {
     this.emit('deposit', sourceAccount, amount)
   }
 
-  // *** +++ Tip Hook Functions +
-  async onNoPotentialTip (potentialTip) {
-    // Override this or listen to events!
-    this.emit('noPotentialTip', potentialTip)
-  }
-
   async onTipWithInsufficientBalance (potentialTip, amount) {
     // Override this or listen to events!
     this.emit('tipWithInsufficientBalance', potentialTip, amount)
@@ -48,9 +42,9 @@ class Adapter extends EventEmitter {
     this.emit('tipReferenceError', potentialTip, amount)
   }
 
-  async onTip (potentialTip, amount, resolvedTargetId) {
+  async onTip (potentialTip, amount) {
     // Override this or listen to events!
-    this.emit('tip', potentialTip, amount, resolvedTargetId)
+    this.emit('tip', potentialTip, amount)
   }
 
   // *** +++ Withdrawael Hook Functions +
@@ -78,44 +72,33 @@ class Adapter extends EventEmitter {
    *  Should receive a tip object like:
    *
    *  {
-   *    text: "the text to scan",
    *    adapter: "adapter_name", (e.g. "reddit")
    *    sourceId: "unique_source_id", (e.g. reddit username)
    *    targetId: "foo_bar" // the target id
-   *    resolveTargetId: async function that finally resolves the target id if you don't have it (optional)
+   *    amount: "123.12",
    *  }
    *
    *  You'll receive the tip object within every hook, so you can add stuff you need in the callbacks
    */
   async receivePotentialTip (tip) {
-      // Check if the text does contain a tip.
-      const payment = utils.extractPayment(tip.text)
-      if (!payment) {
-        return this.onNoPotentialTip(tip)
-      }
-
       // Let's see if the source has a sufficient balance
       const source = await this.Account.getOrCreate(tip.adapter, tip.sourceId)
+      const payment = new Big(tip.amount)
+
       if (!source.canPay(payment)) {
         return this.onTipWithInsufficientBalance(tip, payment.toFixed(7))
       }
 
-      // Fetch or create the recipient
-      const targetId = tip.targetId ? tip.targetId : await tip.resolveTargetId()
-
-      if (!targetId) {
-        return this.onTipTransferFailed(tip, payment.toFixed(7))
-      }
-      if (tip.sourceId === targetId) {
+      if (tip.sourceId === tip.targetId) {
         return this.onTipReferenceError(tip, payment.toFixed(7))
       }
 
-      const target = await this.Account.getOrCreate(tip.adapter, targetId)
+      const target = await this.Account.getOrCreate(tip.adapter, tip.targetId)
 
       // ... and tip.
       source.transfer(target, payment)
         .then(() => {
-          this.onTip(tip, payment.toFixed(7), targetId)
+          this.onTip(tip, payment.toFixed(7))
         })
         .catch(() => {
           this.onTipTransferFailed(tip, payment.toFixed(7))

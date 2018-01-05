@@ -11,21 +11,10 @@ describe('adapter', async () => {
   })
 
   describe('receivePotentialTip', () => {
-    it ('should call onNoPotentialTip if no tip included', (done) => {
-      let tip = {
-        text: 'the text to scan',
-        adapter: 'testing',
-        sourceId: 'foo'
-      }
-
-      adapter.on('noPotentialTip', () => done())
-      adapter.receivePotentialTip(tip)
-
-    })
 
     it ('should call onTipWithInsufficientBalance if source cant pay', (done) => {
       let tip = {
-        text: '+++1 XLM',
+        amount: '1.12',
         adapter: 'testing',
         sourceId: 'foo'
       }
@@ -42,12 +31,10 @@ describe('adapter', async () => {
         balance: '5.0000000'
       }).then(() => {
         let tip = {
-          text: '+++1 XLM',
+          amount: '1',
           adapter: 'testing',
           sourceId: 'foo',
-          resolveTargetId: () => {
-            return 'foo'
-          }
+          targetId: 'foo'
         }
         adapter.on('tipReferenceError', () => done())
         adapter.receivePotentialTip(tip)
@@ -61,15 +48,12 @@ describe('adapter', async () => {
         balance: '5.0000000'
       }).then(() => {
         let tip = {
-          text: '+++1 XLM',
+          amount: '1',
           adapter: 'testing',
           sourceId: 'foo',
-          resolveTargetId: () => {
-            return 'bar'
-          }
+          targetId: 'bar'
         }
-        adapter.on('tip', async (tip, amount, resolvedTargetId) => {
-          assert.equal('bar', resolvedTargetId)
+        adapter.on('tip', async (tip, amount) => {
           assert.equal('1.0000000', amount)
 
           source = await adapter.Account.oneAsync({adapter: 'testing', uniqueId: 'foo'})

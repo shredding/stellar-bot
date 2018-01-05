@@ -1,7 +1,9 @@
 const Snoowrap = require('snoowrap')
 const Adapter = require('./abstract')
-const utils = require('../utils')
+const Big = require('big.js')
+const StellarSdk = require('stellar-sdk')
 
+// *** +++ Reddit API +
 function getR() {
   const r = new Snoowrap({
     userAgent: process.env.REDDIT_USER,
@@ -28,12 +30,6 @@ async function callReddit(func, data, client) {
   } catch (exc) {
     console.log(exc.name + ` - Failed to execute ${func} with data:`, data)
   }
-}
-
-function removeDuplicates(orignal, listing) {
-  return listing.filter(function(post) {
-    return orignal.every(a => a.id != post.id)
-  })
 }
 
 function formatMessage(txt) {
@@ -70,8 +66,8 @@ class Reddit extends Adapter {
     await callReddit('reply', formatMessage(`Don't tip yourself please.`), tip.original)
   }
 
-  async onTip (tip, amount, resolvedTargetId) {
-    console.log(`Tip from ${tip.sourceId} to ${resolvedTargetId}.`)
+  async onTip (tip, amount) {
+    console.log(`Tip from ${tip.sourceId} to ${tip.targetId}.`)
     await callReddit('reply', formatMessage(`Thank you. You tipped **${payment} XLM** to *${success.targetId}*.`), tip.original)
   }
 
@@ -118,10 +114,10 @@ class Reddit extends Adapter {
     super(config)
 
     console.log('Start observing subreddits ...')
-    this.pollComments()
+    // this.pollComments()
 
     console.log('Start observing reddit private messages ...')
-    this.pollMessages()
+    // this.pollMessages()
   }
 
   async pollComments (lastBatch) {
@@ -135,21 +131,21 @@ class Reddit extends Adapter {
 
     comments.filter((comment) => {
       return lastBatch.every(batch => batch.id != comment.id)
-    }).forEach((comment) => {
-      this.receivePotentialTip({
-        adapter: 'reddit',
-        sourceId: comment.author.name,
-        text: comment.body,
-        resolveTargetId: async () => {
-           const targetComment = await callReddit('getComment', comment.parent_id)
+    }).forEach(async (comment) => {
 
-           if (!targetComment) {
-             return undefined
-           }
-           return targetComment.author.name
-        },
-        original: comment
-      })
+      const tipAmount = this.extractTipAmount(comment.body)
+      if (tipAmount) {
+        const targetComment = await callReddit('getComment', comment.parent_id)
+        if (targetComment) {
+          this.receivePotentialTip({
+            adapter: 'reddit',
+            sourceId: comment.author.name,
+            targetId: targetComment.author.name,
+            amount: tipAmount,
+            original: comment
+          })
+        }
+      }
     })
 
     lastBatch = comments
@@ -177,7 +173,7 @@ class Reddit extends Adapter {
         }
 
         if (m.subject === 'Withdraw') {
-          const extract = utils.extractWithdrawal(m.body_html)
+          const extract = this.extractWithdrawal(m.body_html)
 
           if (!extract) {
             console.log(`XML withdrawal failed - unparsable message from ${m.author.name}.`)
@@ -197,6 +193,31 @@ class Reddit extends Adapter {
 
     await utils.sleep(2000)
     this.pollMessages()
+  }
+
+  extractTipAmount (tipText) {
+    const matches =  tipText.match(/\+\+\+([\d\.]*)[\s{1}]?XLM/i)
+    if (matches) {
+        return new Big(matches[1])
+    }
+    return undefined
+  }
+
+  extractWithdrawal (body) {
+    const parts = body.slice(body.indexOf('<p>') + 3, body.indexOf('</p>')).split('\n')
+
+    if (parts.length === 2) {
+      const amount = parts[0].match(/([\d\.]*)/)[0]
+      const address = StellarSdk.StrKey.isValidEd25519PublicKey(parts[1]) ? parts[1] : undefined
+
+      if (amount && address) {
+        return {
+          amount: new Big(amount),
+          address: address
+        }
+      }
+      return undefined
+    }
   }
 }
 
