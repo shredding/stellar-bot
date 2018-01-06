@@ -70,7 +70,7 @@ class Reddit extends Adapter {
 
   async onTip (tip, amount) {
     console.log(`Tip from ${tip.sourceId} to ${tip.targetId}.`)
-    await callReddit('reply', formatMessage(`Thank you. You tipped **${payment} XLM** to *${success.targetId}*.`), tip.original)
+    await callReddit('reply', formatMessage(`Thank you. You tipped **${amount} XLM** to *${success.targetId}*.`), tip.original)
   }
 
   async onWithdrawalReferenceError (uniqueId, address, amount, hash) {
