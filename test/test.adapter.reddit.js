@@ -21,6 +21,8 @@ describe('redditAdapter', async () => {
       assert.equal('1.12', redditAdapter.extractTipAmount('foo +++1.12 XLM bar'))
       assert.equal('100', redditAdapter.extractTipAmount('foo +++100 xlm!'))
       assert.equal('10', redditAdapter.extractTipAmount('foo +++10xlm bar'))
+      assert.equal('10', redditAdapter.extractTipAmount('foo +++ 10xlm bar'))
+      assert.equal('10.123', redditAdapter.extractTipAmount('foo +++ 10.123 xlm bar'))
     })
 
     it ('should return undefined if no payment is included', () => {

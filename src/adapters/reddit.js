@@ -32,15 +32,15 @@ async function callReddit(func, data, client) {
 
 function formatMessage(txt) {
   return `
-    ${txt} 
+    ${txt}
     \n\n\n\n
     *This bot is in BETA Phase. Everything runs on the testnet. Do not send real XLM!*
     \n\n\n\n
-    [Deposit](https://www.reddit.com/user/stellar_bot/comments/7o2ex9/deposit/) | 
-    [Withdraw](https://np.reddit.com/message/compose/?to=${process.env.REDDIT_USER}&subject=Withdraw&message=Amount%20XLM%0Aaddress%20here) | 
-    [Balance](https://np.reddit.com/message/compose/?to=${process.env.REDDIT_USER}&subject=Balance&message=Tell%20me%20my%20XLM%20Balance!) | 
-    [Help](https://www.reddit.com/user/stellar_bot/comments/7o2gnd/help/) | 
-    [Donate](https://www.reddit.com/user/stellar_bot/comments/7o2ffl/donate/) | 
+    [Deposit](https://www.reddit.com/user/stellar_bot/comments/7o2ex9/deposit/) |
+    [Withdraw](https://np.reddit.com/message/compose/?to=${process.env.REDDIT_USER}&subject=Withdraw&message=Amount%20XLM%0Aaddress%20here) |
+    [Balance](https://np.reddit.com/message/compose/?to=${process.env.REDDIT_USER}&subject=Balance&message=Tell%20me%20my%20XLM%20Balance!) |
+    [Help](https://www.reddit.com/user/stellar_bot/comments/7o2gnd/help/) |
+    [Donate](https://www.reddit.com/user/stellar_bot/comments/7o2ffl/donate/) |
     [About Stellar](https://www.stellar.org/)
   `
 }
@@ -212,11 +212,8 @@ class Reddit extends Adapter {
   }
 
   extractTipAmount (tipText) {
-    const matches = tipText.match(/\+\+\+([\d\.]*)[\s{1}]?XLM/i)
-    if (matches) {
-        return matches[1]
-    }
-    return undefined
+    const matches =  tipText.match(/\+\+\+[\s{1}]?[\d\.]*[\s{1}]?XLM/i)
+    return matches ? matches[0].replace('+++', '').replace(/xlm/i, '').replace(/\s/g, '') : undefined
   }
 
   extractWithdrawal (body) {
