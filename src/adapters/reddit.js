@@ -151,7 +151,7 @@ class Reddit extends Adapter {
           this.receivePotentialTip({
             adapter: 'reddit',
             sourceId: comment.author.name,
-            targetId: targetComment.author.name,
+            targetId: await targetComment.author.name,
             amount: tipAmount,
             original: comment
           })
