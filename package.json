@@ -9,7 +9,8 @@
     "orm": "^4.0.2",
     "pg": "^7.4.0",
     "snoowrap": "^1.15.1",
-    "stellar-sdk": "^0.8.0"
+    "stellar-sdk": "^0.8.0",
+    "twitter": "^1.7.1"
   },
   "devDependencies": {
     "mocha": "^4.1.0"
