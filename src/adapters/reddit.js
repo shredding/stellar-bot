@@ -56,20 +56,35 @@ class Reddit extends Adapter {
   }
 
   async onTipWithInsufficientBalance (tip, amount) {
-    await callReddit('reply', formatMessage(`Sorry. I can not tip for you. Your balance is insufficient.`), tip.original)
+    console.log(`${uniqueId} tipped with insufficient balance.`)
+    exeucte('composeMessage', {
+      to: uniqueId,
+      subject: 'Tipping failed',
+      text: formatMessage(`Sorry. I can not tip for you. Your balance is insufficient. Deposit and try again.`)
+    })
   }
 
   async onTipTransferFailed(tip, amount) {
-    await callReddit('reply', formatMessage(`Sorry. I can not tip for you. Your balance is insufficient.`), tip.original)
+    console.log(`Tip tranfer failed for ${uniqueId}.`)
+    exeucte('composeMessage', {
+      to: uniqueId,
+      subject: 'Tipping failed',
+      text: formatMessage(`I could not tip for you, because of an unknown error. Please try again. [Contact the dev team](https://github.com/shredding/stellar-bot/issues/new) if the error persists.`)
+    })
   }
 
   async onTipReferenceError (tip, amount) {
-    await callReddit('reply', formatMessage(`Don't tip yourself please.`), tip.original)
+    console.log(`Tip reference error for ${uniqueId}.`)
+    exeucte('composeMessage', {
+      to: uniqueId,
+      subject: 'Tipping failed',
+      text: formatMessage(`You tried to tip yourself. That does not work.`)
+    })
   }
 
   async onTip (tip, amount) {
     console.log(`Tip from ${tip.sourceId} to ${tip.targetId}.`)
-    await callReddit('reply', formatMessage(`Thank you. You tipped **${amount} XLM** to *${tip.targetId}*.`), tip.original)
+    await callReddit('reply', formatMessage(`You tipped **${amount} XLM** to *${tip.targetId}*.`), tip.original)
   }
 
   async onWithdrawalReferenceError (uniqueId, address, amount, hash) {
@@ -77,7 +92,7 @@ class Reddit extends Adapter {
     exeucte('composeMessage', {
       to: uniqueId,
       subject: 'XLM Withdrawal failed',
-      text: formatMessage(`An unknown error occured. This shouldn't have happened. Please contact the bot.`)
+      text: formatMessage(`You tried to withdraw to the bot address. Please try again.`)
     })
   }
 
@@ -86,7 +101,7 @@ class Reddit extends Adapter {
     await callReddit('composeMessage', {
       to: uniqueId,
       subject: 'XLM Withdrawal failed',
-      text: formatMessage(`We could not withdraw. The requested public address does not exist.`)
+      text: formatMessage(`I could not withdraw. The requested public address does not exist.`)
     })
   }
 
@@ -95,7 +110,7 @@ class Reddit extends Adapter {
     await callReddit('composeMessage', {
       to: address,
       subject: 'XLM Withdrawal failed',
-      text: formatMessage(`We could not withdraw. You requested more than your current balance. Please adjust and try again.`)
+      text: formatMessage(`I could not withdraw. You requested more than your current balance. Please adjust and try again.`)
     })
   }
 
@@ -104,7 +119,7 @@ class Reddit extends Adapter {
     await callReddit('composeMessage', {
       to: address,
       subject: 'XLM Withdrawal failed',
-      text: formatMessage(`We could not withdraw. The given address is not valid.`)
+      text: formatMessage(`I could not withdraw, because of an unknown error. Please try again. [Contact the dev team](https://github.com/shredding/stellar-bot/issues/new) if the error persists.`)
     })
   }
 
