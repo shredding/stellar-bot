@@ -22,7 +22,6 @@ module.exports = async function (models) {
     callBuilder.cursor(latestTx.cursor)
   }
 
-  console.log('Start streaming txns ...')
   callBuilder.stream({
     onmessage: (record) => {
       record.transaction()
