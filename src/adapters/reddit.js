@@ -148,14 +148,12 @@ class Reddit extends Adapter {
   constructor (config) {
     super(config)
 
-    console.log('Start observing subreddits ...')
     this.pollComments()
-
-    console.log('Start observing reddit private messages ...')
     this.pollMessages()
   }
 
   async pollComments (lastBatch) {
+    console.log('Start observing subreddits ...')
     lastBatch = lastBatch || []
 
     const comments = await callReddit('getNewComments', 'Stellar')
@@ -189,6 +187,7 @@ class Reddit extends Adapter {
   }
 
   async pollMessages () {
+    console.log('Start observing reddit private messages ...')
     const messages = await callReddit('getUnreadMessages') || []
     let processedMessages = []
 
