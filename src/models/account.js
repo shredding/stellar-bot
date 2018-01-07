@@ -137,7 +137,7 @@ module.exports = (db) => {
               await stellar.send(tx)
             } catch (exc) {
               account.balance = refundBalance.plus(amount).toFixed(7)
-              return reject('WITHDRAWAL_SUBMISSION_FAILED')
+              return reject(exc)
             }
 
             await Transaction.createAsync(doc)

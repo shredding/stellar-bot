@@ -118,7 +118,16 @@ module.exports = async function (models) {
       })
     },
     send: async function (tx) {
-      return await server.submitTransaction(tx)
+      return new Promise(async (resolve, reject) => {
+        try {
+          await server.submitTransaction(tx)
+          resolve()
+        } catch (exc) {
+          console.log('WITHDRAWAL_SUBMISSION_FAILED')
+          console.log(exc)
+          reject('WITHDRAWAL_SUBMISSION_FAILED')
+        }
+      })
     }
   }
 }

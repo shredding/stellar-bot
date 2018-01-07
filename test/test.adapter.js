@@ -35,6 +35,72 @@ describe('adapter', async () => {
       })
     })
 
+    it ('should call withdrawalReferenceError if transaction goes to bot account', (done) => {
+      adapter.on('withdrawalReferenceError', async () => {
+        // account should be refunded
+        const account = await Account.getOrCreate('testing', 'foo')
+        assert.equal('5.0000000', account.balance)
+        done()
+      })
+      const Transaction = adapter.config.models.transaction
+      const Account = adapter.config.models.account
+      const source = 'GAKLZ3CMOEMLZWO4EKXLIRDQSZ6XQMNGWCMRSDBJFQITD2TZXYTHBU4X'
+      const target = 'GAKLZ3CMOEMLZWO4EKXLIRDQSZ6XQMNGWCMRSDBJFQITD2TZXYTHBU4X'
+      const now = new Date()
+
+      Account.createAsync({
+        adapter: 'testing',
+        uniqueId: 'foo',
+        balance: '5.0000000'
+      }).then(() => {
+        adapter.config.stellar = {
+          createTransaction: () => new Promise((res, rej) => {
+            return rej('WITHDRAWAL_REFERENCE_ERROR')
+          })
+        }
+        adapter.receiveWithdrawalRequest({
+          adapter: 'testing',
+          amount: '5',
+          uniqueId: 'foo',
+          hash: 'hash',
+          address: target
+        })
+      })
+    })
+
+    it ('should call withdrawalDestinationAccountDoesNotExist if transaction goes to non existing account', (done) => {
+      adapter.on('withdrawalDestinationAccountDoesNotExist', async () => {
+        // account should be refunded
+        const account = await Account.getOrCreate('testing', 'foo')
+        assert.equal('5.0000000', account.balance)
+        done()
+      })
+      const Transaction = adapter.config.models.transaction
+      const Account = adapter.config.models.account
+      const source = 'GAKLZ3CMOEMLZWO4EKXLIRDQSZ6XQMNGWCMRSDBJFQITD2TZXYTHBU4X'
+      const target = 'GA2B3GCDNVMANF4TT44KJNYU7TBVTKWY5XWF3Q3BJAPXRPBHXAEIFGBD'
+      const now = new Date()
+
+      Account.createAsync({
+        adapter: 'testing',
+        uniqueId: 'foo',
+        balance: '5.0000000'
+      }).then(() => {
+        adapter.config.stellar = {
+          createTransaction: () => new Promise((res, rej) => {
+            return rej('WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST')
+          })
+        }
+        adapter.receiveWithdrawalRequest({
+          adapter: 'testing',
+          amount: '5',
+          uniqueId: 'foo',
+          hash: 'hash',
+          address: target
+        })
+      })
+    })
+
     it ('should call withdrawalSubmissionFailed if transaction already exists', (done) => {
       adapter.on('withdrawalSubmissionFailed', async () => {
         // account should be refunded
@@ -99,7 +165,7 @@ describe('adapter', async () => {
           address: source,
           createTransaction: () => {},
           send: () => {
-            throw new Error('Something went wrong.')
+            throw 'WITHDRAWAL_SUBMISSION_FAILED'
           }
         }
         adapter.receiveWithdrawalRequest({
