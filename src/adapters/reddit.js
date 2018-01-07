@@ -56,7 +56,7 @@ class Reddit extends Adapter {
   }
 
   async onTipWithInsufficientBalance (tip, amount) {
-    console.log(`${uniqueId} tipped with insufficient balance.`)
+    console.log(`${tip.sourceId} tipped with insufficient balance.`)
     callReddit('composeMessage', {
       to: uniqueId,
       subject: 'Tipping failed',
@@ -65,7 +65,7 @@ class Reddit extends Adapter {
   }
 
   async onTipTransferFailed(tip, amount) {
-    console.log(`Tip tranfer failed for ${uniqueId}.`)
+    console.log(`Tip tranfer failed for ${tip.sourceId}.`)
     callReddit('composeMessage', {
       to: uniqueId,
       subject: 'Tipping failed',
@@ -74,7 +74,7 @@ class Reddit extends Adapter {
   }
 
   async onTipReferenceError (tip, amount) {
-    console.log(`Tip reference error for ${uniqueId}.`)
+    console.log(`Tip reference error for ${tip.sourceId}.`)
     callReddit('composeMessage', {
       to: uniqueId,
       subject: 'Tipping failed',
