@@ -58,7 +58,7 @@ class Reddit extends Adapter {
   async onTipWithInsufficientBalance (tip, amount) {
     console.log(`${tip.sourceId} tipped with insufficient balance.`)
     callReddit('composeMessage', {
-      to: uniqueId,
+      to: tip.sourceId,
       subject: 'Tipping failed',
       text: formatMessage(`Sorry. I can not tip for you. Your balance is insufficient. Deposit and try again.`)
     })
@@ -67,7 +67,7 @@ class Reddit extends Adapter {
   async onTipTransferFailed(tip, amount) {
     console.log(`Tip tranfer failed for ${tip.sourceId}.`)
     callReddit('composeMessage', {
-      to: uniqueId,
+      to: tip.sourceId,
       subject: 'Tipping failed',
       text: formatMessage(`I could not tip for you, because of an unknown error. Please try again. [Contact the dev team](https://github.com/shredding/stellar-bot/issues/new) if the error persists.`)
     })
@@ -76,7 +76,7 @@ class Reddit extends Adapter {
   async onTipReferenceError (tip, amount) {
     console.log(`Tip reference error for ${tip.sourceId}.`)
     callReddit('composeMessage', {
-      to: uniqueId,
+      to: tip.sourceId,
       subject: 'Tipping failed',
       text: formatMessage(`You tried to tip yourself. That does not work.`)
     })
