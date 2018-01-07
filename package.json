@@ -7,7 +7,6 @@
     "big.js": "^5.0.3",
     "dotenv": "^4.0.0",
     "orm": "^4.0.2",
-    "orm-transaction": "0.0.2",
     "pg": "^7.4.0",
     "snoowrap": "^1.15.1",
     "stellar-sdk": "^0.8.0"
