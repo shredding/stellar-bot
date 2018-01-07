@@ -90,17 +90,69 @@ module.exports = (db) => {
         })
       },
 
-      /**
-       * Updates the account. You have to send the money afterwards!
-       */
-      withdraw: async function (amount) {
-        if (!this.canPay) {
-          throw new Error('Unsufficient balance. Always check with `canPay` before withdrawing money!')
-        }
-        const sourceBalance = new Big(this.balance)
-        amount = new Big(amount)
-        this.balance = sourceBalance.minus(amount).toFixed(7)
-        await this.saveAsync()
+      withdraw: function (stellar, to, withdrawalAmount, hash) {
+        const Transaction = db.models.transaction
+        const account = this
+
+        return new Promise(function (resolve, reject) {
+          db.transaction(async function (err, t) {
+            if (err) {
+              reject(err)
+            }
+
+            if (!account.canPay) {
+              throw new Error('Unsufficient balance. Always check with `canPay` before withdrawing money!')
+            }
+
+            const sourceBalance = new Big(account.balance)
+            const amount = new Big(withdrawalAmount)
+            account.balance = sourceBalance.minus(amount).toFixed(7)
+            const refundBalance = new Big(account.balance)
+
+            const now = new Date()
+            const doc = {
+              memoId: 'XLM Tipping bot',
+              amount: amount.toFixed(7),
+              createdAt: now.toISOString(),
+              asset: 'native',
+              source: stellar.address,
+              target: to,
+              hash: hash,
+              type: 'withdrawal'
+            }
+            const exists = await Transaction.existsAsync({
+              hash: hash,
+              type: 'withdrawal',
+              target: to
+            })
+
+            if (exists) {
+              // Withdrawal already happened within a concurrent transaction, let's skip
+              account.balance = refundBalance.plus(amount).toFixed(7)
+              return reject('WITHDRAWAL_SUBMISSION_FAILED')
+            }
+
+            try {
+              const tx = await stellar.createTransaction(to, withdrawalAmount.toFixed(7), hash)
+              await stellar.send(tx)
+            } catch (exc) {
+              account.balance = refundBalance.plus(amount).toFixed(7)
+              return reject('WITHDRAWAL_SUBMISSION_FAILED')
+            }
+
+            await Transaction.createAsync(doc)
+            await account.saveAsync()
+
+            t.commit((err) => {
+              if (err) {
+                console.log(err)
+                return reject(err)
+              }
+              Transaction.events.emit('TRANSACTION_WITHDRAWAL')
+                return resolve()
+              })
+          })
+        })
       }
     },
 

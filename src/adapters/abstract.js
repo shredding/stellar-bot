@@ -62,7 +62,7 @@ class Adapter extends EventEmitter {
   }
 
   async onWithdrawalSubmissionFailed (uniqueId, address, amount, hash) {
-    this.emit('withdrawalSubmissionFailed ', uniqueId, address, amount, hash)
+    this.emit('withdrawalSubmissionFailed', uniqueId, address, amount, hash)
   }
 
   async onWithdrawalInvalidAddress (uniqueId, address ,amount, hash) {
@@ -140,39 +140,29 @@ class Adapter extends EventEmitter {
       const uniqueId = withdrawalRequest.uniqueId
       const hash = withdrawalRequest.hash
       const address = withdrawalRequest.address
+      const fixedAmount = withdrawalAmount.toFixed(7)
 
       if (!StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
-        return this.onWithdrawalInvalidAddress(uniqueId, address, withdrawalAmount.toFixed(7), hash)
+        return this.onWithdrawalInvalidAddress(uniqueId, address, fixedAmount, hash)
       }
 
       // Fetch the account
       const target = await this.Account.getOrCreate(adapter, uniqueId)
       if (!target.canPay(withdrawalAmount)) {
-        return this.onWithdrawalFailedWithInsufficientBalance(uniqueId, address, withdrawalAmount.toFixed(7), hash)
+        return this.onWithdrawalFailedWithInsufficientBalance(uniqueId, address, fixedAmount, hash)
       }
 
-      // Update it's balance
-      await target.withdraw(withdrawalAmount)
+      // Withdraw
+      try {
+        await target.withdraw(this.config.stellar, address, withdrawalAmount, hash)
+        this.onWithdrawal(uniqueId, address, fixedAmount, hash)
+      } catch (exc) {
+        if (exc === 'WITHDRAWAL_SUBMISSION_FAILED') {
+          this.onWithdrawalSubmissionFailed(uniqueId, address, fixedAmount, hash)
+        }
+      }
 
-      // ... and commit the withdrawal to the network
-      this.config.stellar.send(address, withdrawalAmount.toFixed(7), hash)
-        .then(() => {
-          this.onWithdrawal(uniqueId, address, withdrawalAmount.toFixed(7), hash)
-        })
-        .catch((data) => {
-          switch (data.status) {
-            case 'WITHDRAWAL_REFERENCE_ERROR':
-              this.onWithdrawalReferenceError(uniqueId, address, withdrawalAmount.toFixed(7), hash)
-              break
-            case 'WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST':
-              this.onWithdrawalDestinationAccountDoesNotExist(uniqueId, address, withdrawalAmount.toFixed(7), hash)
-              break
 
-            default:
-              this.onWithdrawalSubmissionFailed(uniqueId, address, withdrawalAmount.toFixed(7), hash)
-              break
-          }
-        })
     })
   }
 }

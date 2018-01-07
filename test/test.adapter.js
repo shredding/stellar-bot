@@ -34,6 +34,116 @@ describe('adapter', async () => {
         address: 'GA2B3GCDNVMANF4TT44KJNYU7TBVTKWY5XWF3Q3BJAPXRPBHXAEIFGBD'
       })
     })
+
+    it ('should call withdrawalSubmissionFailed if transaction already exists', (done) => {
+      adapter.on('withdrawalSubmissionFailed', async () => {
+        // account should be refunded
+        const account = await Account.getOrCreate('testing', 'foo')
+        assert.equal('5.0000000', account.balance)
+        done()
+      })
+      const Transaction = adapter.config.models.transaction
+      const Account = adapter.config.models.account
+      const source = 'GCFXHS4GXL6BVUCXBWXGTITROWLVYXQKQLF4YH5O5JT3YZXCYPAFBJZB'
+      const target = 'GA2C5RFPE6GCKMY3US5PAB6UZLKIGSPIUKSLRB6Q723BM2OARMDUYEJ5'
+      const now = new Date()
+
+      Account.createAsync({
+        adapter: 'testing',
+        uniqueId: 'foo',
+        balance: '5.0000000'
+      }).then(() => {
+        Transaction.createAsync({
+          memoId: 'XLM Tipping bot',
+          amount: '5',
+          asset: 'native',
+          hash: 'hash',
+          type: 'withdrawal',
+          target: target,
+          source: source
+        }).then(() => {
+          adapter.config.stellar = {
+            address: source,
+            createTransaction: () => {}
+          }
+          adapter.receiveWithdrawalRequest({
+            adapter: 'testing',
+            amount: '5',
+            uniqueId: 'foo',
+            hash: 'hash',
+            address: target
+          })
+        })
+      })
+    })
+
+    it ('should refund withdrawalSubmissionFailed if transaction send fails', (done) => {
+      adapter.on('withdrawalSubmissionFailed', async () => {
+        // account should be refunded
+        const account = await Account.getOrCreate('testing', 'foo')
+        assert.equal('5.0000000', account.balance)
+        done()
+      })
+      const Transaction = adapter.config.models.transaction
+      const Account = adapter.config.models.account
+      const source = 'GCFXHS4GXL6BVUCXBWXGTITROWLVYXQKQLF4YH5O5JT3YZXCYPAFBJZB'
+      const target = 'GA2C5RFPE6GCKMY3US5PAB6UZLKIGSPIUKSLRB6Q723BM2OARMDUYEJ5'
+      const now = new Date()
+
+      Account.createAsync({
+        adapter: 'testing',
+        uniqueId: 'foo',
+        balance: '5.0000000'
+      }).then(() => {
+        adapter.config.stellar = {
+          address: source,
+          createTransaction: () => {},
+          send: () => {
+            throw new Error('Something went wrong.')
+          }
+        }
+        adapter.receiveWithdrawalRequest({
+          adapter: 'testing',
+          amount: '5',
+          uniqueId: 'foo',
+          hash: 'hash',
+          address: target
+        })
+      })
+    })
+
+    it ('should perform a withdrawal', (done) => {
+      adapter.on('withdrawal', async () => {
+        // account should be refunded
+        const account = await Account.getOrCreate('testing', 'foo')
+        assert.equal('0.0000000', account.balance)
+        done()
+      })
+      const Transaction = adapter.config.models.transaction
+      const Account = adapter.config.models.account
+      const source = 'GCFXHS4GXL6BVUCXBWXGTITROWLVYXQKQLF4YH5O5JT3YZXCYPAFBJZB'
+      const target = 'GA2C5RFPE6GCKMY3US5PAB6UZLKIGSPIUKSLRB6Q723BM2OARMDUYEJ5'
+      const now = new Date()
+
+      Account.createAsync({
+        adapter: 'testing',
+        uniqueId: 'foo',
+        balance: '5.0000000'
+      }).then(() => {
+        adapter.config.stellar = {
+          address: source,
+          createTransaction: () => {},
+          send: () => {}
+        }
+        adapter.receiveWithdrawalRequest({
+          adapter: 'testing',
+          amount: '5',
+          uniqueId: 'foo',
+          hash: 'hash',
+          address: target
+        })
+      })
+    })
   })
 
   describe('receivePotentialTip', () => {
