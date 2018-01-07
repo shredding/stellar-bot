@@ -148,6 +148,8 @@ class Reddit extends Adapter {
   constructor (config) {
     super(config)
 
+    this.name = 'reddit'
+
     this.pollComments()
     this.pollMessages()
   }
@@ -170,7 +172,7 @@ class Reddit extends Adapter {
         const targetComment = await callReddit('getComment', comment.parent_id)
         if (targetComment) {
           this.receivePotentialTip({
-            adapter: 'reddit',
+            adapter: this.name,
             sourceId: comment.author.name,
             targetId: await targetComment.author.name,
             amount: tipAmount,
@@ -194,7 +196,7 @@ class Reddit extends Adapter {
       .forEach(async (m) => {
            // Check the balance of the user
         if (m.subject === 'Balance') {
-          const balance = await this.requestBalance('reddit', m.author.name)
+          const balance = await this.requestBalance(this.name, m.author.name)
           await callReddit('composeMessage', {
             to: m.author.name,
             subject: 'XLM Balance',
@@ -218,7 +220,7 @@ class Reddit extends Adapter {
               console.log(`XLM withdrawal initiated for ${m.author.name}.`)
               await callReddit('markMessagesAsRead', [m])
               this.receiveWithdrawalRequest({
-                adapter: 'reddit',
+                adapter: this.name,
                 uniqueId: m.author.name,
                 amount: extract.amount,
                 address: extract.address,

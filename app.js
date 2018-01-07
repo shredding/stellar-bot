@@ -15,6 +15,8 @@ async function bootstrap () {
     new Reddit(config)
   ]
 
+  console.log("Alive and kickin'!")
+
 }
 
 bootstrap()

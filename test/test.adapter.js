@@ -10,6 +10,34 @@ describe('adapter', async () => {
     adapter = new Adapter(config)
   })
 
+  describe('deposit', () => {
+    it ('should call onDeposit when the adapter is correct', (done) => {
+      const Account = adapter.config.models.account
+
+      adapter.on('deposit', () => done())
+      adapter.name = 'testing'
+
+      Account.createAsync({
+        adapter: 'testing',
+        uniqueId: 'foo',
+        balance: '5.0000000'
+      }).then((account) => Account.events.emit('DEPOSIT', account, '50'))
+    })
+
+    it ('should not call onDeposit when the adapter is correct', () => {
+      const Account = adapter.config.models.account
+
+      adapter.on('deposit', () => { throw new Error() })
+      adapter.name = 'testing'
+
+      Account.createAsync({
+        adapter: 'foo',
+        uniqueId: 'foo',
+        balance: '5.0000000'
+      }).then((account) => Account.events.emit('DEPOSIT', account, '50'))
+    })
+  })
+
   describe('receiveWithdrawalRequest', () => {
     it ('should call withdrawalInvalidAddress if invalid address is given', (done) => {
       adapter.on('withdrawalInvalidAddress', () => done())
@@ -212,61 +240,61 @@ describe('adapter', async () => {
     })
   })
 
-  // describe('receivePotentialTip', () => {
+  describe('receivePotentialTip', () => {
 
-  //   it ('should call onTipWithInsufficientBalance if source cant pay', (done) => {
-  //     let tip = {
-  //       amount: '1.12',
-  //       adapter: 'testing',
-  //       sourceId: 'foo'
-  //     }
+    it ('should call onTipWithInsufficientBalance if source cant pay', (done) => {
+      let tip = {
+        amount: '1.12',
+        adapter: 'testing',
+        sourceId: 'foo'
+      }
 
-  //     adapter.on('tipWithInsufficientBalance', () => done())
-  //     adapter.receivePotentialTip(tip)
+      adapter.on('tipWithInsufficientBalance', () => done())
+      adapter.receivePotentialTip(tip)
 
-  //   })
+    })
 
-  //   it ('should reject with onTipReferenceError if one tips herself', (done) => {
-  //     adapter.Account.createAsync({
-  //       adapter: 'testing',
-  //       uniqueId: 'foo',
-  //       balance: '5.0000000'
-  //     }).then(() => {
-  //       let tip = {
-  //         amount: '1',
-  //         adapter: 'testing',
-  //         sourceId: 'foo',
-  //         targetId: 'foo'
-  //       }
-  //       adapter.on('tipReferenceError', () => done())
-  //       adapter.receivePotentialTip(tip)
-  //     })
-  //   })
+    it ('should reject with onTipReferenceError if one tips herself', (done) => {
+      adapter.Account.createAsync({
+        adapter: 'testing',
+        uniqueId: 'foo',
+        balance: '5.0000000'
+      }).then(() => {
+        let tip = {
+          amount: '1',
+          adapter: 'testing',
+          sourceId: 'foo',
+          targetId: 'foo'
+        }
+        adapter.on('tipReferenceError', () => done())
+        adapter.receivePotentialTip(tip)
+      })
+    })
 
-  //   it ('should transfer money and call with onTip', (done) => {
-  //     adapter.Account.createAsync({
-  //       adapter: 'testing',
-  //       uniqueId: 'foo',
-  //       balance: '5.0000000'
-  //     }).then(() => {
-  //       let tip = {
-  //         amount: '1',
-  //         adapter: 'testing',
-  //         sourceId: 'foo',
-  //         targetId: 'bar'
-  //       }
-  //       adapter.on('tip', async (tip, amount) => {
-  //         assert.equal('1.0000000', amount)
+    it ('should transfer money and call with onTip', (done) => {
+      adapter.Account.createAsync({
+        adapter: 'testing',
+        uniqueId: 'foo',
+        balance: '5.0000000'
+      }).then(() => {
+        let tip = {
+          amount: '1',
+          adapter: 'testing',
+          sourceId: 'foo',
+          targetId: 'bar'
+        }
+        adapter.on('tip', async (tip, amount) => {
+          assert.equal('1.0000000', amount)
 
-  //         source = await adapter.Account.oneAsync({adapter: 'testing', uniqueId: 'foo'})
-  //         target = await adapter.Account.oneAsync({adapter: 'testing', uniqueId: 'bar'})
+          source = await adapter.Account.oneAsync({adapter: 'testing', uniqueId: 'foo'})
+          target = await adapter.Account.oneAsync({adapter: 'testing', uniqueId: 'bar'})
 
-  //         assert.equal(source.balance, '4.0000000')
-  //         assert.equal(target.balance, '1.0000000')
-  //         done()
-  //       })
-  //       adapter.receivePotentialTip(tip)
-  //     })
-  //   })
-  // })
+          assert.equal(source.balance, '4.0000000')
+          assert.equal(target.balance, '1.0000000')
+          done()
+        })
+        adapter.receivePotentialTip(tip)
+      })
+    })
+  })
 })

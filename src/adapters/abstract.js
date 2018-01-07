@@ -12,14 +12,11 @@ class Adapter extends EventEmitter {
 
     this.Account = config.models.account
 
-    this.Account.events.on('TRANSFER', this.onTransfer)
-    this.Account.events.on('DEPOSIT', this.onDeposit)
-  }
-
-  // *** +++ Transfer Hook Functions +
-  async onTransfer (sourceAccount, targetAccount, amount) {
-    // Override this or listen to events!
-    this.emit('transfer', sourceAccount, targetAccount, amount)
+    this.Account.events.on('DEPOSIT', (sourceAccount, amount) => {
+      if (this.name === sourceAccount.adapter) {
+        this.onDeposit(sourceAccount, amount)
+      }
+    })
   }
 
   // *** +++ Deposit Hook Functions +
