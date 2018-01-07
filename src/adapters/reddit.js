@@ -38,8 +38,8 @@ function formatMessage(txt) {
     '*This bot is in BETA Phase. Everything runs on the testnet. Do not send real XLM!*' +
     '\n\n\n\n' +
     '[Deposit](https://www.reddit.com/user/stellar_bot/comments/7o2ex9/deposit/) | ' +
-    '[Withdraw](https://np.reddit.com/message/compose/?to=${process.env.REDDIT_USER}&subject=Withdraw&message=Amount%20XLM%0Aaddress%20here) | ' +
-    '[Balance](https://np.reddit.com/message/compose/?to=${process.env.REDDIT_USER}&subject=Balance&message=Tell%20me%20my%20XLM%20Balance!) | ' +
+    `[Withdraw](https://np.reddit.com/message/compose/?to=${process.env.REDDIT_USER}&subject=Withdraw&message=Amount%20XLM%0Aaddress%20here) | ` +
+    `[Balance](https://np.reddit.com/message/compose/?to=${process.env.REDDIT_USER}&subject=Balance&message=Tell%20me%20my%20XLM%20Balance!) | ` +
     '[Help](https://www.reddit.com/user/stellar_bot/comments/7o2gnd/help/) | ' +
     '[Donate](https://www.reddit.com/user/stellar_bot/comments/7o2ffl/donate/) | ' +
     '[About Stellar](https://www.stellar.org/)'
