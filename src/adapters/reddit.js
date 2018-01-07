@@ -57,7 +57,7 @@ class Reddit extends Adapter {
 
   async onTipWithInsufficientBalance (tip, amount) {
     console.log(`${uniqueId} tipped with insufficient balance.`)
-    exeucte('composeMessage', {
+    callReddit('composeMessage', {
       to: uniqueId,
       subject: 'Tipping failed',
       text: formatMessage(`Sorry. I can not tip for you. Your balance is insufficient. Deposit and try again.`)
@@ -66,7 +66,7 @@ class Reddit extends Adapter {
 
   async onTipTransferFailed(tip, amount) {
     console.log(`Tip tranfer failed for ${uniqueId}.`)
-    exeucte('composeMessage', {
+    callReddit('composeMessage', {
       to: uniqueId,
       subject: 'Tipping failed',
       text: formatMessage(`I could not tip for you, because of an unknown error. Please try again. [Contact the dev team](https://github.com/shredding/stellar-bot/issues/new) if the error persists.`)
@@ -75,7 +75,7 @@ class Reddit extends Adapter {
 
   async onTipReferenceError (tip, amount) {
     console.log(`Tip reference error for ${uniqueId}.`)
-    exeucte('composeMessage', {
+    callReddit('composeMessage', {
       to: uniqueId,
       subject: 'Tipping failed',
       text: formatMessage(`You tried to tip yourself. That does not work.`)
@@ -85,12 +85,12 @@ class Reddit extends Adapter {
   async onTip (tip, amount) {
     console.log(`Tip from ${tip.sourceId} to ${tip.targetId}.`)
     await callReddit('reply', formatMessage(`You tipped **${amount} XLM** to *${tip.targetId}*.`), tip.original)
-    exeucte('composeMessage', {
+    callReddit('composeMessage', {
       to: tip.sourceId,
       subject: 'Tipped!',
       text: formatMessage(`You tipped **${amount} XLM** to *${tip.targetId}*.`)
     })
-    exeucte('composeMessage', {
+    callReddit('composeMessage', {
       to: tip.targetId,
       subject: 'Tipped!',
       text: formatMessage(`*${tip.sourceId}* tipped **${amount} XLM** to you. Have fun and enjoy the stellar experience.`)
@@ -99,7 +99,7 @@ class Reddit extends Adapter {
 
   async onWithdrawalReferenceError (uniqueId, address, amount, hash) {
     console.log(`XLM withdrawal failed - unknown error for ${uniqueId}.`)
-    exeucte('composeMessage', {
+    callReddit('composeMessage', {
       to: uniqueId,
       subject: 'XLM Withdrawal failed',
       text: formatMessage(`You tried to withdraw to the bot address. Please try again.`)
