@@ -85,6 +85,16 @@ class Reddit extends Adapter {
   async onTip (tip, amount) {
     console.log(`Tip from ${tip.sourceId} to ${tip.targetId}.`)
     await callReddit('reply', formatMessage(`You tipped **${amount} XLM** to *${tip.targetId}*.`), tip.original)
+    exeucte('composeMessage', {
+      to: tip.sourceId,
+      subject: 'Tipped!',
+      text: formatMessage(`You tipped **${amount} XLM** to *${tip.targetId}*.`)
+    })
+    exeucte('composeMessage', {
+      to: tip.targetId,
+      subject: 'Tipped!',
+      text: formatMessage(`*${tip.sourceId}* tipped **${amount} XLM** to you. Have fun and enjoy the stellar experience.`)
+    })
   }
 
   async onWithdrawalReferenceError (uniqueId, address, amount, hash) {
