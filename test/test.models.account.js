@@ -30,16 +30,6 @@ describe('models / account', async () => {
     })
   })
 
-  describe('withdraw', () => {
-    it ('can withdraw money', async () => {
-      const acc = await Model.getOrCreate('testing', 'foo')
-      await acc.withdraw('0.40000000')
-      assert.equal(acc.balance, '0.6000000')
-      const accReloaded = await Model.getOrCreate('testing', 'foo')
-      assert.equal(accReloaded.balance, '0.6000000')
-    })
-  })
-
   describe('canPay', () => {
     it ('should return true if balance is gte', () => {
       assert.ok(account.canPay('1'))

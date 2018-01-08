@@ -64,6 +64,10 @@ Run the app:
 npm run app
 ```
 
+## Contribute
+
+We are always looking for contributors. A nice way to contribute is [creating more adapters](https://github.com/shredding/stellar-bot/wiki/How-To:-Create-an-adapter) on top of the bot.
+
 ## Donate
 
 If you want to support the development of the bot, please send XLM to:

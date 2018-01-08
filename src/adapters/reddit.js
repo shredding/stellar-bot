@@ -1,5 +1,6 @@
 const Snoowrap = require('snoowrap')
 const Adapter = require('./abstract')
+const utils = require('../utils')
 
 // *** +++ Reddit API +
 function getR() {
@@ -26,20 +27,21 @@ async function callReddit(func, data, client) {
   try {
     return await client[func](data)
   } catch (exc) {
-    console.log(exc.name + ` - Failed to execute ${func} with data:`, data)
+    console.error(`${exc.name} - Failed to execute ${func} with data:`, data)
   }
 }
 
 function formatMessage(txt) {
   return txt +
-  '\n\n\n\n' + `*This bot is in BETA Phase. Everything runs on the testnet. Do not send real XLM!*` +
-   '\n\n\n\n' +
-    `[Deposit](https://www.reddit.com/user/stellar_bot/comments/7o2ex9/deposit/) | ` +
+    '\n\n\n\n' +
+    '*This bot is in BETA Phase. Everything runs on the testnet. Do not send real XLM!*' +
+    '\n\n\n\n' +
+    '[Deposit](https://www.reddit.com/user/stellar_bot/comments/7o2ex9/deposit/) | ' +
     `[Withdraw](https://np.reddit.com/message/compose/?to=${process.env.REDDIT_USER}&subject=Withdraw&message=Amount%20XLM%0Aaddress%20here) | ` +
     `[Balance](https://np.reddit.com/message/compose/?to=${process.env.REDDIT_USER}&subject=Balance&message=Tell%20me%20my%20XLM%20Balance!) | ` +
-    `[Help](https://www.reddit.com/user/stellar_bot/comments/7o2gnd/help/) | ` +
-    `[Donate](https://www.reddit.com/user/stellar_bot/comments/7o2ffl/donate/) | ` +
-    `[About Stellar](https://www.stellar.org/)`
+    '[Help](https://www.reddit.com/user/stellar_bot/comments/7o2gnd/help/) | ' +
+    '[Donate](https://www.reddit.com/user/stellar_bot/comments/7o2ffl/donate/) | ' +
+    '[About Stellar](https://www.stellar.org/)'
 }
 
 class Reddit extends Adapter {
@@ -53,55 +55,80 @@ class Reddit extends Adapter {
   }
 
   async onTipWithInsufficientBalance (tip, amount) {
-    await callReddit('reply', formatMessage(`Sorry. I can not tip for you. Your balance is insufficient.`), tip.original)
+    console.log(`${tip.sourceId} tipped with insufficient balance.`)
+    callReddit('composeMessage', {
+      to: tip.sourceId,
+      subject: 'Tipping failed',
+      text: formatMessage(`Sorry. I can not tip for you. Your balance is insufficient. Deposit and try again.`)
+    })
   }
 
   async onTipTransferFailed(tip, amount) {
-    await callReddit('reply', formatMessage(`Sorry. I can not tip for you. Your balance is insufficient.`), tip.original)
+    console.log(`Tip tranfer failed for ${tip.sourceId}.`)
+    callReddit('composeMessage', {
+      to: tip.sourceId,
+      subject: 'Tipping failed',
+      text: formatMessage(`I could not tip for you, because of an unknown error. Please try again. [Contact the dev team](https://github.com/shredding/stellar-bot/issues/new) if the error persists.`)
+    })
   }
 
   async onTipReferenceError (tip, amount) {
-    await callReddit('reply', formatMessage(`Don't tip yourself please.`), tip.original)
+    console.log(`Tip reference error for ${tip.sourceId}.`)
+    callReddit('composeMessage', {
+      to: tip.sourceId,
+      subject: 'Tipping failed',
+      text: formatMessage(`You tried to tip yourself. That does not work.`)
+    })
   }
 
   async onTip (tip, amount) {
     console.log(`Tip from ${tip.sourceId} to ${tip.targetId}.`)
-    await callReddit('reply', formatMessage(`Thank you. You tipped **${payment} XLM** to *${success.targetId}*.`), tip.original)
+    await callReddit('reply', formatMessage(`You tipped **${amount} XLM** to *${tip.targetId}*.`), tip.original)
+    callReddit('composeMessage', {
+      to: tip.sourceId,
+      subject: 'Tipped!',
+      text: formatMessage(`You tipped **${amount} XLM** to *${tip.targetId}*.`)
+    })
+    callReddit('composeMessage', {
+      to: tip.targetId,
+      subject: 'Tipped!',
+      text: formatMessage(`*${tip.sourceId}* tipped **${amount} XLM** to you. Have fun and enjoy the stellar experience.`)
+    })
   }
 
   async onWithdrawalReferenceError (uniqueId, address, amount, hash) {
-    console.log(`XML withdrawal failed - unknown error for ${uniqueId}.`)
-    exeucte('composeMessage', {
+    console.log(`XLM withdrawal failed - unknown error for ${uniqueId}.`)
+    callReddit('composeMessage', {
       to: uniqueId,
       subject: 'XLM Withdrawal failed',
-      text: formatMessage(`An unknown error occured. This shouldn't have happened. Please contact the bot.`)
+      text: formatMessage(`You tried to withdraw to the bot address. Please try again.`)
     })
   }
 
   async onWithdrawalDestinationAccountDoesNotExist (uniqueId, address, amount, hash) {
-    console.log(`XML withdrawal failed - no public address for ${uniqueId}.`)
+    console.log(`XLM withdrawal failed - no public address for ${uniqueId}.`)
     await callReddit('composeMessage', {
       to: uniqueId,
       subject: 'XLM Withdrawal failed',
-      text: formatMessage(`We could not withdraw. The requested public address does not exist.`)
+      text: formatMessage(`I could not withdraw. The requested public address does not exist.`)
     })
   }
 
   async onWithdrawalFailedWithInsufficientBalance (uniqueId, address, amount, hash) {
-    console.log(`XML withdrawal failed - insufficient balance for ${uniqueId}.`)
+    console.log(`XLM withdrawal failed - insufficient balance for ${uniqueId}.`)
     await callReddit('composeMessage', {
       to: address,
       subject: 'XLM Withdrawal failed',
-      text: formatMessage(`We could not withdraw. You requested more than your current balance. Please adjust and try again.`)
+      text: formatMessage(`I could not withdraw. You requested more than your current balance. Please adjust and try again.`)
     })
   }
 
   async onWithdrawalInvalidAddress (uniqueId, address ,amount, hash) {
-    console.log(`XML withdrawal failed - invalid address ${address}.`)
+    console.log(`XLM withdrawal failed - invalid address ${address}.`)
     await callReddit('composeMessage', {
       to: address,
       subject: 'XLM Withdrawal failed',
-      text: formatMessage(`We could not withdraw. The given address is not valid.`)
+      text: formatMessage(`I could not withdraw, because of an unknown error. Please try again. [Contact the dev team](https://github.com/shredding/stellar-bot/issues/new) if the error persists.`)
     })
   }
 
@@ -120,10 +147,9 @@ class Reddit extends Adapter {
   constructor (config) {
     super(config)
 
-    console.log('Start observing subreddits ...')
-    this.pollComments()
+    this.name = 'reddit'
 
-    console.log('Start observing reddit private messages ...')
+    this.pollComments()
     this.pollMessages()
   }
 
@@ -145,9 +171,9 @@ class Reddit extends Adapter {
         const targetComment = await callReddit('getComment', comment.parent_id)
         if (targetComment) {
           this.receivePotentialTip({
-            adapter: 'reddit',
+            adapter: this.name,
             sourceId: comment.author.name,
-            targetId: targetComment.author.name,
+            targetId: await targetComment.author.name,
             amount: tipAmount,
             original: comment
           })
@@ -169,7 +195,7 @@ class Reddit extends Adapter {
       .forEach(async (m) => {
            // Check the balance of the user
         if (m.subject === 'Balance') {
-          const balance = await this.requestBalance('reddit', m.author.name)
+          const balance = await this.requestBalance(this.name, m.author.name)
           await callReddit('composeMessage', {
             to: m.author.name,
             subject: 'XLM Balance',
@@ -183,17 +209,17 @@ class Reddit extends Adapter {
           const extract = this.extractWithdrawal(m.body_html)
 
           if (!extract) {
-            console.log(`XML withdrawal failed - unparsable message from ${m.author.name}.`)
+            console.log(`XLM withdrawal failed - unparsable message from ${m.author.name}.`)
             await callReddit('composeMessage', {
               to: m.author.name,
               subject: 'XLM Withdrawal failed',
               text: formatMessage(`We could not withdraw. Please make sure that the first line of the body is withdrawal amount and the second line your public key.`)
             })
           } else {
-              console.log(`XML withdrawal initiated for ${m.author.name}.`)
+              console.log(`XLM withdrawal initiated for ${m.author.name}.`)
               await callReddit('markMessagesAsRead', [m])
               this.receiveWithdrawalRequest({
-                adapter: 'reddit',
+                adapter: this.name,
                 uniqueId: m.author.name,
                 amount: extract.amount,
                 address: extract.address,
@@ -209,11 +235,8 @@ class Reddit extends Adapter {
   }
 
   extractTipAmount (tipText) {
-    const matches =  tipText.match(/\+\+\+([\d\.]*)[\s{1}]?XLM/i)
-    if (matches) {
-        return matches[1]
-    }
-    return undefined
+    const matches =  tipText.match(/\+\+\+[\s{1}]?[\d\.]*[\s{1}]?XLM/i)
+    return matches ? matches[0].replace('+++', '').replace(/xlm/i, '').replace(/\s/g, '') : undefined
   }
 
   extractWithdrawal (body) {

@@ -26,81 +26,89 @@ module.exports = (db) => {
        *
        * Transaction save.
        */
-      transfer: function (targetAccount, amount) {
+      transfer: async function (targetAccount, amount) {
         if (!this.canPay) {
           throw new Error('Unsufficient balance. Always check with `canPay` before tranferring money!')
         }
 
-        const sourceAccount = this
-        return new Promise(function (resolve, reject) {
-          db.transaction(async function (err, t) {
-            if (err) {
-              reject(err)
-            }
+        return await Account.withinTransaction(async () => {
+          const sourceBalance = new Big(this.balance)
+          const targetBalance = new Big(targetAccount.balance)
+          amount = new Big(amount)
 
-            const sourceBalance = new Big(sourceAccount.balance)
-            const targetBalance = new Big(targetAccount.balance)
-            amount = new Big(amount)
+          this.balance = sourceBalance.minus(amount).toFixed(7)
+          targetAccount.balance = targetBalance.plus(amount).toFixed(7)
 
-            sourceAccount.balance = sourceBalance.minus(amount).toFixed(7)
-            targetAccount.balance = targetBalance.plus(amount).toFixed(7)
-
-            await sourceAccount.saveAsync()
-            await targetAccount.saveAsync()
-
-            t.commit((err) => {
-              if (err) {
-                reject(err)
-              }
-              Account.events.emit('TRANSFER', sourceAccount, targetAccount, amount)
-              resolve()
-            })
-          })
+          await this.saveAsync()
+          await targetAccount.saveAsync()
+          Account.events.emit('TRANSFER', this, targetAccount, amount)
         })
       },
 
       /**
        * Transaction save deposit of a transaction
        */
-      deposit: function (transaction) {
-        const sourceAccount = this
-        return new Promise(function (resolve, reject) {
-          db.transaction(async function (err, t) {
-            if (err) {
-              reject(err)
-            }
+      deposit: async function (transaction) {
+        return await Account.withinTransaction(async () => {
+          const sourceBalance = new Big(this.balance)
+          amount = new Big(transaction.amount)
 
-            const sourceBalance = new Big(sourceAccount.balance)
-            amount = new Big(transaction.amount)
+          this.balance = sourceBalance.plus(amount).toFixed(7)
+          transaction.credited = true
 
-            sourceAccount.balance = sourceBalance.plus(amount).toFixed(7)
-            transaction.credited = true
-
-            await sourceAccount.saveAsync()
-            await transaction.saveAsync()
-
-            t.commit((err) => {
-              if (err) {
-                reject(err)
-              }
-              Account.events.emit('DEPOSIT', sourceAccount, amount)
-              resolve()
-            })
-          })
+          await this.saveAsync()
+          await transaction.saveAsync()
+          Account.events.emit('DEPOSIT', this, amount)
         })
       },
 
-      /**
-       * Updates the account. You have to send the money afterwards!
-       */
-      withdraw: async function (amount) {
-        if (!this.canPay) {
-          throw new Error('Unsufficient balance. Always check with `canPay` before withdrawing money!')
-        }
-        const sourceBalance = new Big(this.balance)
-        amount = new Big(amount)
-        this.balance = sourceBalance.minus(amount).toFixed(7)
-        await this.saveAsync()
+      withdraw: async function (stellar, to, withdrawalAmount, hash) {
+        const Transaction = db.models.transaction
+        const account = this
+
+        return await Account.withinTransaction(async () => {
+          if (!this.canPay) {
+            throw new Error('Unsufficient balance. Always check with `canPay` before withdrawing money!')
+          }
+          const sourceBalance = new Big(this.balance)
+          const amount = new Big(withdrawalAmount)
+          this.balance = sourceBalance.minus(amount).toFixed(7)
+          const refundBalance = new Big(account.balance)
+
+          const now = new Date()
+          const doc = {
+            memoId: 'XLM Tipping bot',
+            amount: amount.toFixed(7),
+            createdAt: now.toISOString(),
+            asset: 'native',
+            source: stellar.address,
+            target: to,
+            hash: hash,
+            type: 'withdrawal'
+          }
+          const exists = await Transaction.existsAsync({
+            hash: hash,
+            type: 'withdrawal',
+            target: to
+          })
+
+          if (exists) {
+            // Withdrawal already happened within a concurrent transaction, let's skip
+            this.balance = refundBalance.plus(amount).toFixed(7)
+            throw 'WITHDRAWAL_SUBMISSION_FAILED'
+          }
+
+          try {
+            const tx = await stellar.createTransaction(to, withdrawalAmount.toFixed(7), hash)
+            await stellar.send(tx)
+          } catch (exc) {
+            account.balance = refundBalance.plus(amount).toFixed(7)
+            throw exc
+          }
+
+          await Transaction.createAsync(doc)
+          await account.saveAsync()
+        })
       }
     },
 
@@ -127,31 +135,20 @@ module.exports = (db) => {
    * Transaction save get or create.
    * doc if optional (adapter and uniqueId are taken if not given)
    */
-  Account.getOrCreate = function (adapter, uniqueId, doc) {
-    return new Promise((resolve, reject) => {
-      db.transaction(async function (err, t) {
-        if (err) {
-          reject(err)
+  Account.getOrCreate = async function (adapter, uniqueId, doc) {
+    return await Account.withinTransaction(async () => {
+      let a = await Account.oneAsync({ adapter, uniqueId })
+      if (!a) {
+        doc = doc || {}
+        if (!doc.hasOwnProperty('adapter')) {
+          doc.adapter = adapter
         }
-        let a = await Account.oneAsync({ adapter, uniqueId })
-        if (!a) {
-          doc = doc || {}
-          if (!doc.hasOwnProperty('adapter')) {
-            doc.adapter = adapter
-          }
-          if (!doc.hasOwnProperty('uniqueId')) {
-            doc.uniqueId = uniqueId
-          }
-          a = await Account.createAsync(doc)
+        if (!doc.hasOwnProperty('uniqueId')) {
+          doc.uniqueId = uniqueId
         }
-
-        t.commit((err) => {
-          if (err) {
-            reject(err)
-          }
-          resolve(a)
-        })
-      })
+        a = await Account.createAsync(doc)
+      }
+      return a
     })
   }
 

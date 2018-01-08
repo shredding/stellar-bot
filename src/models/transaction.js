@@ -60,33 +60,5 @@ module.exports = (db) => {
     })
   }
 
-  Transaction.wrapAtomicSend = function (server, funcName, transaction, doc) {
-      return new Promise(function (resolve, reject) {
-        db.transaction(async function (err, t) {
-          if (err) {
-            reject(err)
-          }
-
-          const exists = await Transaction.existsAsync({
-              hash: doc.hash,
-              type: doc.type,
-              target: doc.to
-            })
-
-          if (!exists) {
-            await Transaction.createAsync(doc)
-          }
-
-          t.commit((err) => {
-            if (err) {
-              reject(err)
-            }
-            Transaction.events.emit('TRANSACTION_WITHDRAWAL')
-            resolve(server[funcName](transaction))
-          })
-        })
-      })
-  }
-
   return Transaction
 }
