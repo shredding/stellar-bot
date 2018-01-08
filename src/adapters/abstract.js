@@ -14,7 +14,7 @@ class Adapter extends EventEmitter {
 
     this.Account.events.on('DEPOSIT', (sourceAccount, amount) => {
       if (this.name === sourceAccount.adapter) {
-        this.onDeposit(sourceAccount, amount.toFixed())
+        this.onDeposit(sourceAccount, amount.toFixed(7))
       }
     })
   }
