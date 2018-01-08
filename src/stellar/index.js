@@ -87,7 +87,7 @@ module.exports = async function (models) {
       return new Promise(function (resolve, reject) {
         // Do not deposit to self, it wouldn't make sense
         if (to === publicKey) {
-          data.status = 'WITHDRAWAL_REFERENCE_ERROR'
+          data = 'WITHDRAWAL_REFERENCE_ERROR'
           return reject(data)
         }
 
@@ -97,7 +97,7 @@ module.exports = async function (models) {
         server.loadAccount(to)
           // If the account is not found, surface a nicer error message for logging.
           .catch(StellarSdk.NotFoundError, function (error) {
-            data.status = 'WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST'
+            data = 'WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST'
             return reject(data)
           })
           // If there was no error, load up-to-date information on your account.
