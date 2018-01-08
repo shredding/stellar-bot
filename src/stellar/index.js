@@ -124,7 +124,7 @@ module.exports = async function (models) {
             resolve(transaction)
           })
       })
-    }
+    },
 
     /**
      * Send a transaction into the horizon network
