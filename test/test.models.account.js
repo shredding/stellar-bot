@@ -1,4 +1,5 @@
 const assert = require('assert')
+const sinon = require('sinon')
 
 
 describe('models / account', async () => {
@@ -27,6 +28,22 @@ describe('models / account', async () => {
       assert.equal(otherAccount.adapter, 'testing')
       assert.equal(otherAccount.uniqueId, 'bar')
       assert.equal(otherAccount.balance, '5.0000000')
+    })
+
+    it('should call "new account" callback, passing in unique ID, if-and-only-if a new account was created', async () => {
+
+      let callback = sinon.spy(function(){})
+
+      const uniqueID = 'newUserUniqueId'
+
+      const oldAccount = await Model.getOrCreate('testing', 'foo', null, callback)
+
+      const newAccount= await Model.getOrCreate('testing', uniqueID, {
+        balance: '5.0000000'
+      }, callback)
+
+      assert.equal(true, callback.calledWith(uniqueID))
+      assert.equal(true, callback.calledOnce)
     })
   })
 

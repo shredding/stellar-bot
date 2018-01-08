@@ -2,6 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const app = express()
 const Adapter = require('./abstract-adapter')
+const slmessage = require('../slack_specific/slack-mesage')
 
 /// Set up exress app
 app.set('port', (process.env.PORT || 5000));
@@ -16,8 +17,9 @@ app.get('/', function (req, res) {
 
 app.post('/slack/tip', function (req, res) {
     console.log('someone sent a tip!')
-    console.log(JSON.stringify(req.body))
-    res.sendStatus(200);
+    let msg = new slmessage(req.body)
+    console.log(msg)
+    console.log("Unique user id: " + msg.uniqueUserID)
     // If the user is not registered, return an error appropriate. Maybe instruct them how to register
     // else if the user is registered
     // Check the amount against the user's current balance
@@ -36,6 +38,8 @@ app.post('/slack/tip', function (req, res) {
     // add the tip to the receiver's balance
     // send a success message to the sender
     // send a personal message to the receiver alerting them they received a tip
+    res.sendStatus(200);
+
 });
 
 app.post('/slack/withdraw', function (req, res) {
@@ -200,4 +204,4 @@ class Slack extends Adapter {
   }
 }
 
-module.exports = Reddit
+module.exports = Slack

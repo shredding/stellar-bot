@@ -127,14 +127,14 @@ module.exports = (db) => {
    * Transaction save get or create.
    * doc if optional (adapter and uniqueId are taken if not given)
    */
-  Account.getOrCreate = function (adapter, uniqueId, doc) {
+  Account.getOrCreate = function (adapter, uniqueId, doc, newAccountCreatedCallback) {
     return new Promise((resolve, reject) => {
       db.transaction(async function (err, t) {
         if (err) {
           reject(err)
         }
-        let a = await Account.oneAsync({ adapter, uniqueId })
-        if (!a) {
+        let account = await Account.oneAsync({ adapter, uniqueId })
+        if (!account) {
           doc = doc || {}
           if (!doc.hasOwnProperty('adapter')) {
             doc.adapter = adapter
@@ -142,14 +142,17 @@ module.exports = (db) => {
           if (!doc.hasOwnProperty('uniqueId')) {
             doc.uniqueId = uniqueId
           }
-          a = await Account.createAsync(doc)
+          account = await Account.createAsync(doc)
+          if(newAccountCreatedCallback) {
+            newAccountCreatedCallback(uniqueId)
+          }
         }
 
         t.commit((err) => {
           if (err) {
             reject(err)
           }
-          resolve(a)
+          resolve(account)
         })
       })
     })

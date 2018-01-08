@@ -1,6 +1,6 @@
 "use strict";
 
-class SlackHelper {
+class SlackUtils {
 
     /**
      * Takes a string, which usually will be an escaped Slack userID string
@@ -10,10 +10,16 @@ class SlackHelper {
      *
      * See: https://api.slack.com/slash-commands#how_do_commands_work
      */
-    function extractUserid(str) {
-        let result = str.slice(str.indexOf("@")+1, str.indexOf("|"));
+    constructor() {
+      this.extractUserId = function (str) {
+        // If it doesn't contain @ and |, we're not interested. Just return what's given to us
+        if(str.indexOf("@") < 0 || str.indexOf("|") < 0 ) {
+            return str
+        }
+        let result = str.slice(str.indexOf("@") + 1, str.indexOf("|"))
         return result
+      }
     }
 }
 
-module.exports = SlackUtils
+module.exports = new SlackUtils()
