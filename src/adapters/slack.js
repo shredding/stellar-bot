@@ -1,7 +1,7 @@
 const express = require('express')
 const bodyParser = require('body-parser')
 const app = express()
-const Adapter = require('./abstract-adapter')
+const Adapter = require('./abstract')
 const slmessage = require('../slack_specific/slack-mesage')
 
 /// Set up exress app

@@ -1,5 +1,5 @@
 const assert = require('assert')
-const Adapter = require('../src/adapters/abstract-adapter')
+const Adapter = require('../src/adapters/abstract')
 
 describe('adapter', async () => {
 
