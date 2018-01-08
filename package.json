@@ -10,7 +10,9 @@
     "orm-transaction": "0.0.2",
     "pg": "^7.4.0",
     "snoowrap": "^1.15.1",
-    "stellar-sdk": "^0.8.0"
+    "stellar-sdk": "^0.8.0",
+    "express": "^4.14.1",
+    "body-parser": "^1.16.1"
   },
   "devDependencies": {
     "mocha": "^4.1.0"

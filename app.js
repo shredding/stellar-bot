@@ -3,6 +3,7 @@ require('dotenv').config({path: process.env.NODE_ENV ? './.env' + process.env.NO
 
 // +++ Adapters +
 const Reddit = require('./src/adapters/reddit')
+const Slack = require('./src/adapters/slack')
 
 async function bootstrap () {
 
@@ -12,7 +13,7 @@ async function bootstrap () {
   let config = { models, stellar }
 
   const adapters = [
-    new Reddit(config)
+    new Slack(config)
   ]
 
 }
