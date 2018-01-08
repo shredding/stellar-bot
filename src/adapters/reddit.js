@@ -58,7 +58,7 @@ class Reddit extends Adapter {
     await callReddit('composeMessage', {
       to: sourceAccount.uniqueId,
       subject: 'XLM Deposit',
-      text: formatMessage(`${amount} XLM have been sucessfully deposited to your account.`)
+      text: formatMessage(`**${amount} XLM** have been sucessfully deposited to your account.`)
     })
   }
 
@@ -148,7 +148,7 @@ class Reddit extends Adapter {
     await callReddit('composeMessage', {
       to: uniqueId,
       subject: 'XLM Withdrawal',
-      text: formatMessage(`${amount} XLM are on their way to ${address}.`)
+      text: formatMessage(`**${amount} XLM** are on their way to ${address}.`)
     })
   }
 
@@ -213,7 +213,7 @@ class Reddit extends Adapter {
           await callReddit('composeMessage', {
             to: m.author.name,
             subject: 'XLM Balance',
-            text: formatMessage(`Your current balance is ${balance} XLM.`)
+            text: formatMessage(`Your current balance is **${balance} XLM**.`)
           })
           console.log(`Balance request answered for ${m.author.name}.`)
           await callReddit('markMessagesAsRead', [m])
