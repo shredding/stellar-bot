@@ -1,5 +1,6 @@
 const assert = require('assert')
 const Adapter = require('../src/adapters/abstract')
+const Big = require('big.js')
 
 describe('adapter', async () => {
 
@@ -21,7 +22,7 @@ describe('adapter', async () => {
         adapter: 'testing',
         uniqueId: 'foo',
         balance: '5.0000000'
-      }).then((account) => Account.events.emit('DEPOSIT', account, '50'))
+      }).then((account) => Account.events.emit('DEPOSIT', account, new Big('50')))
     })
 
     it ('should not call onDeposit when the adapter is correct', () => {
