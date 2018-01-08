@@ -57,4 +57,25 @@ describe('models / account', async () => {
       assert.ok(!account.canPay('2'))
     })
   })
+
+  describe('userExists', () => {
+    it ("should return false if a user with that uniqueID doesn't exist", async () => {
+      let unusedID = "123456"
+      let modelExists = await Model.userExists('testing', unusedID)
+      assert.equal(modelExists, false, "Account with id 123456 should not exist")
+    })
+
+    it ("should return true if a user with that uniqueID does exist", async () => {
+      let usedId = "foo"
+      let modelExists = await Model.userExists('testing', usedId)
+      assert.equal(modelExists, true, "Account with id foo should exist")
+    })
+
+    it ("should return false if a user with that uniqueID does exist for a different adapter", async () => {
+      let usedId = "foo"
+      let differentAdapter = "somethingElse"
+      let modelExists = await Model.userExists(differentAdapter, usedId)
+      assert.equal(modelExists, false, "Account with id foo should not exist on new adapter")
+    })
+  })
 })

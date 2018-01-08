@@ -12,79 +12,80 @@ app.use(bodyParser.urlencoded({extended: false}))
 
 // Index route
 app.get('/', function (req, res) {
-    res.send('Hello world, I am a chat bot');
+  res.send('Hello world, I am a chat bot');
 });
 
 app.post('/slack/tip', function (req, res) {
-    console.log('someone sent a tip!')
-    let msg = new slmessage(req.body)
-    console.log(msg)
-    console.log("Unique user id: " + msg.uniqueUserID)
-    // If the user is not registered, return an error appropriate. Maybe instruct them how to register
-    // else if the user is registered
-    // Check the amount against the user's current balance
-    // If the user's balance is not high enough, return an error containing the current balance
-    // If the user's balance is high enough, first identify the receiver by retreiving their user_id (UUID) then check if the receiver is already registered
-    // If a user does not exist in the db with their particular info,
-    // Add them to the database without a public wallet address (the real mark of not being registered)
-    // Save the tip info in the database
-    //
-    // Else-If a user DOES exist in the db with their particlar inof
-    // Make the transfer happen
-    // If failure
-    // send an appropriate message to the tipper
-    // If success
-    // remove the tip from the sender's balance
-    // add the tip to the receiver's balance
-    // send a success message to the sender
-    // send a personal message to the receiver alerting them they received a tip
-    res.sendStatus(200);
+  console.log('someone sent a tip!')
+  let msg = new slmessage(req.body)
+  console.log(msg)
+  console.log("Unique user id: " + msg.uniqueUserID)
+
+  // If the user is not registered, return an error appropriate. Maybe instruct them how to register
+  // else if the user is registered
+  // Check the amount against the user's current balance
+  // If the user's balance is not high enough, return an error containing the current balance
+  // If the user's balance is high enough, first identify the receiver by retreiving their user_id (UUID) then check if the receiver is already registered
+  // If a user does not exist in the db with their particular info,
+  // Add them to the database without a public wallet address (the real mark of not being registered)
+  // Save the tip info in the database
+  //
+  // Else-If a user DOES exist in the db with their particlar inof
+  // Make the transfer happen
+  // If failure
+  // send an appropriate message to the tipper
+  // If success
+  // remove the tip from the sender's balance
+  // add the tip to the receiver's balance
+  // send a success message to the sender
+  // send a personal message to the receiver alerting them they received a tip
+  res.sendStatus(200);
 
 });
 
 app.post('/slack/withdraw', function (req, res) {
-    console.log('someone wants to make a withdrawal!')
-    console.log(JSON.stringify(req.body))
-    res.sendStatus(200);
+  console.log('someone wants to make a withdrawal!')
+  console.log(JSON.stringify(req.body))
+  res.sendStatus(200);
 
-    // If the user is not registered, return an error appropriate. Maybe instruct them how to register
-    // else if the user is registered
-    // Check the amount against the user's current balance
-    // If the user's balance is not high enough, return an error containing the current balance
-    // If the user's balance is high enough, make the withdrawal and send a message depending on success or failure
+  // If the user is not registered, return an error appropriate. Maybe instruct them how to register
+  // else if the user is registered
+  // Check the amount against the user's current balance
+  // If the user's balance is not high enough, return an error containing the current balance
+  // If the user's balance is high enough, make the withdrawal and send a message depending on success or failure
 
 });
 
 app.post('/slack/register', function (req, res) {
-    console.log('someone wants to register!')
-    console.log(JSON.stringify(req.body))
+  console.log('someone wants to register!')
+  console.log(JSON.stringify(req.body))
 
 
 
-    res.sendStatus(200);
+  res.sendStatus(200);
 
 
 
-    // If the user is already registered, send them a message back explaining (and that
-    // If the user is not already registered
-    // Validate their wallet address
-    // Make sure no one else has already registered that same wallet address
-    // Save to the database
-    // Send them a message back (error if applicable)
+  // If the user is already registered, send them a message back explaining (and that
+  // If the user is not already registered
+  // Validate their wallet address
+  // Make sure no one else has already registered that same wallet address
+  // Save to the database
+  // Send them a message back (error if applicable)
 });
 
 
 
 function formatMessage(txt) {
   return txt +
-  '\n\n\n\n' + `*This bot is in BETA Phase. Everything runs on the testnet. Do not send real XLM!*` +
-   '\n\n\n\n' +
-    `[Deposit](https://www.reddit.com/user/stellar_bot/comments/7o2ex9/deposit/) | ` +
-    `[Withdraw](https://np.reddit.com/message/compose/?to=${process.env.REDDIT_USER}&subject=Withdraw&message=Amount%20XLM%0Aaddress%20here) | ` +
-    `[Balance](https://np.reddit.com/message/compose/?to=${process.env.REDDIT_USER}&subject=Balance&message=Tell%20me%20my%20XLM%20Balance!) | ` +
-    `[Help](https://www.reddit.com/user/stellar_bot/comments/7o2gnd/help/) | ` +
-    `[Donate](https://www.reddit.com/user/stellar_bot/comments/7o2ffl/donate/) | ` +
-    `[About Stellar](https://www.stellar.org/)`
+      '\n\n\n\n' + `*This bot is in BETA Phase. Everything runs on the testnet. Do not send real XLM!*` +
+      '\n\n\n\n' +
+      `[Deposit](https://www.reddit.com/user/stellar_bot/comments/7o2ex9/deposit/) | ` +
+      `[Withdraw](https://np.reddit.com/message/compose/?to=${process.env.REDDIT_USER}&subject=Withdraw&message=Amount%20XLM%0Aaddress%20here) | ` +
+      `[Balance](https://np.reddit.com/message/compose/?to=${process.env.REDDIT_USER}&subject=Balance&message=Tell%20me%20my%20XLM%20Balance!) | ` +
+      `[Help](https://www.reddit.com/user/stellar_bot/comments/7o2gnd/help/) | ` +
+      `[Donate](https://www.reddit.com/user/stellar_bot/comments/7o2ffl/donate/) | ` +
+      `[About Stellar](https://www.stellar.org/)`
 }
 
 class Slack extends Adapter {
@@ -173,7 +174,7 @@ class Slack extends Adapter {
 
     // Spin up the server
     app.listen(app.get('port'), function() {
-        console.log('slackbot running on port', app.get('port'))
+      console.log('slackbot running on port', app.get('port'))
     });
   }
 
@@ -182,7 +183,7 @@ class Slack extends Adapter {
   extractTipAmount (tipText) {
     const matches =  tipText.match(/\+\+\+([\d\.]*)[\s{1}]?XLM/i)
     if (matches) {
-        return matches[1]
+      return matches[1]
     }
     return undefined
   }

@@ -152,5 +152,12 @@ module.exports = (db) => {
     })
   }
 
+  Account.userExists = async function (adapter, uniqueId) {
+    return await Account.withinTransaction(async () => {
+      let a = await Account.oneAsync({ adapter, uniqueId })
+      return a != null
+    })
+  }
+
   return Account
 }
