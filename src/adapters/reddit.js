@@ -21,6 +21,13 @@ function getR() {
   return r
 }
 
+
+/**
+ * Reddit sometimes get's out of reach and throws 503.
+ *
+ * This is not very problematic for us, as we can collect comments and messages later
+ * on and only very, very rarely tips will fail (leaving the balance untouched).
+ */
 async function callReddit(func, data, client) {
   client = client || getR()
 
@@ -31,6 +38,9 @@ async function callReddit(func, data, client) {
   }
 }
 
+/**
+ * Adds the bot footer to the message.
+ */
 function formatMessage(txt) {
   return txt +
     '\n\n\n\n' +
@@ -151,6 +161,9 @@ class Reddit extends Adapter {
     this.pollMessages()
   }
 
+  /**
+   * Polls comments in the registered subreddits every 2 secs.
+   */
   async pollComments (lastBatch) {
     lastBatch = lastBatch || []
 
@@ -184,6 +197,9 @@ class Reddit extends Adapter {
     this.pollComments(lastBatch)
   }
 
+  /**
+   * Polls unread messages to the bot and answers them.
+   */
   async pollMessages () {
     const messages = await callReddit('getUnreadMessages') || []
     let processedMessages = []
@@ -232,11 +248,17 @@ class Reddit extends Adapter {
     this.pollMessages()
   }
 
+  /**
+   * All supported tipping formats ...
+   */
   extractTipAmount (tipText) {
     const matches =  tipText.match(/\+\+\+[\s{1}]?[\d\.]*[\s{1}]?XLM/i)
     return matches ? matches[0].replace('+++', '').replace(/xlm/i, '').replace(/\s/g, '') : undefined
   }
 
+  /**
+   * Extract withdrawal information from the message.
+   */
   extractWithdrawal (body) {
     const parts = body.slice(body.indexOf('<p>') + 3, body.indexOf('</p>')).split('\n')
 

@@ -3,6 +3,14 @@ const Big = require('big.js')
 
 module.exports = (db) => {
 
+  /**
+   * A user account.
+   *
+   * For performance reasons, this is not connected to the transaction.
+   *
+   * However, all balance updates are transaction save and a refund strategy is available
+   * even if horizon fails.
+   */
   const Account = db.define('account', {
       adapter: String,
       uniqueId: String,
@@ -62,6 +70,16 @@ module.exports = (db) => {
         })
       },
 
+      /**
+       * Withdraw money from the main account to the requested account by the user.
+       *
+       * You can get the stellar object from the adapter config.
+       *
+       * to should be a public address
+       * withdrawalAmount can be a string or a Big
+       * hash should just be something unique - we use the msg id from reddit,
+       * but a uuid4 or sth like that would work as well.
+       */
       withdraw: async function (stellar, to, withdrawalAmount, hash) {
         const Transaction = db.models.transaction
         const account = this

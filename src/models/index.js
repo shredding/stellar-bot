@@ -3,6 +3,10 @@ const EventEmitter = require('events')
 
 function configure(model, db) {
   model.events = new EventEmitter()
+
+  /**
+   * Wrap db calls in a transaction - postgres only
+   */
   model.withinTransaction = async (func) => {
     await db.driver.db.query('BEGIN')
     try {

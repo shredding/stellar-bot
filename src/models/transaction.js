@@ -4,7 +4,9 @@ const Big = require('big.js')
 
 module.exports = (db) => {
 
-
+  /**
+   * A stellar network transaction
+   */
   const Transaction = db.define('transaction', {
       source: String,
       target: String,

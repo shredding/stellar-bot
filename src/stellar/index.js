@@ -73,6 +73,15 @@ module.exports = async function (models) {
   return {
     address: publicKey,
     events: events,
+
+    /**
+     * Build a transaction into the network.
+     *
+     * to should be a public address
+     * amount can be a string or a Big
+     * hash should just be something unique - we use the msg id from reddit,
+     * but a uuid4 or sth like that would work as well.
+     */
     createTransaction: function (to, amount, hash) {
       let data = {to, amount, hash}
       return new Promise(function (resolve, reject) {
@@ -115,7 +124,11 @@ module.exports = async function (models) {
             resolve(transaction)
           })
       })
-    },
+    }
+
+    /**
+     * Send a transaction into the horizon network
+     */
     send: async function (tx) {
       return new Promise(async (resolve, reject) => {
         try {

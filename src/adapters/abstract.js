@@ -47,26 +47,32 @@ class Adapter extends EventEmitter {
 
   // *** +++ Withdrawael Hook Functions +
   async onWithdrawalReferenceError (uniqueId, address, amount, hash) {
+    // Override this or listen to events!
     this.emit('withdrawalReferenceError', uniqueId, address, amount, hash)
   }
 
   async onWithdrawalDestinationAccountDoesNotExist (uniqueId, address, amount, hash) {
+    // Override this or listen to events!
     this.emit('withdrawalDestinationAccountDoesNotExist', uniqueId, address, amount, hash)
   }
 
   async onWithdrawalFailedWithInsufficientBalance (uniqueId, address, amount, hash) {
+    // Override this or listen to events!
     this.emit('withdrawalFailedWithInsufficientBalance', uniqueId, address, amount, hash)
   }
 
   async onWithdrawalSubmissionFailed (uniqueId, address, amount, hash) {
+    // Override this or listen to events!
     this.emit('withdrawalSubmissionFailed', uniqueId, address, amount, hash)
   }
 
   async onWithdrawalInvalidAddress (uniqueId, address ,amount, hash) {
+    // Override this or listen to events!
    this.emit('withdrawalInvalidAddress', uniqueId, address, amount, hash)
   }
 
   async onWithdrawal (uniqueId, address, amount, hash) {
+    // Override this or listen to events!
     this.emit('withdrawal', uniqueId, address, amount, hash)
   }
 
@@ -107,6 +113,11 @@ class Adapter extends EventEmitter {
         })
   }
 
+  /**
+   * Returns the balance for the requested adapter / uniqueId combination.
+   *
+   * A fresh account with an initial balance of zero is created if it does not exist.
+   */
   requestBalance (adapter, uniqueId) {
     return new Promise(async (resolve, reject) => {
       const target = await this.Account.getOrCreate(adapter, uniqueId)
