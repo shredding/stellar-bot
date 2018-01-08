@@ -21,8 +21,7 @@ module.exports = async function (models) {
   if (latestTx) {
     callBuilder.cursor(latestTx.cursor)
   }
-  
-  console.log('Start streaming txns ...')
+
   callBuilder.stream({
     onmessage: (record) => {
       record.transaction()
@@ -72,9 +71,9 @@ module.exports = async function (models) {
   })
 
   return {
-    depositAddress: publicKey,
+    address: publicKey,
     events: events,
-    send: function send(to, amount, hash) {
+    createTransaction: function (to, amount, hash) {
       let data = {to, amount, hash}
       return new Promise(function (resolve, reject) {
         // Do not deposit to self, it wouldn't make sense
@@ -111,40 +110,23 @@ module.exports = async function (models) {
               .addMemo(StellarSdk.Memo.text('XLM Tipping bot'))
               .build()
             // Sign the transaction to prove you are actually the person sending it.
-            transaction.sign(keyPair);
+            transaction.sign(keyPair)
 
-            // And finally, send it off to Stellar!
-            const now = new Date()
-            const doc = {
-              memoId: 'XLM Tipping bot',
-              amount: amount,
-              createdAt: now.toISOString(),
-              asset: 'native',
-              source: publicKey,
-              target: to,
-              hash: hash,
-              type: 'withdrawal'
-            }
-            const submitted = await Transaction.wrapAtomicSend(
-              server, 'submitTransaction', transaction, doc
-            )
-            const exists = await Transaction.existsAsync({
-              hash: hash,
-              type: 'withdrawal',
-              target: to
-            })
-            return submitted
+            resolve(transaction)
           })
-          .then(async function(result) {
-            data.status = 'WITHDRAWAL_SUCCESS'
-            resolve(data)
-          })
-          .catch(function(error) {
-            console.log('WITHDRAWAL_STATUS_SUBMISSION_FAILED')
-            console.log(error)
-            reject('WITHDRAWAL_SUBMISSION_FAILED')
-          })
-        })
+      })
+    },
+    send: async function (tx) {
+      return new Promise(async (resolve, reject) => {
+        try {
+          await server.submitTransaction(tx)
+          resolve()
+        } catch (exc) {
+          console.log('WITHDRAWAL_SUBMISSION_FAILED')
+          console.log(exc)
+          reject('WITHDRAWAL_SUBMISSION_FAILED')
+        }
+      })
     }
   }
 }

@@ -16,6 +16,8 @@ async function bootstrap () {
     new Slack(config)
   ]
 
+  console.log("Alive and kickin'!")
+
 }
 
 bootstrap()

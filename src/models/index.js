@@ -1,29 +1,35 @@
 const orm = require('orm')
-const transaction = require('orm-transaction')
 const EventEmitter = require('events')
 
-function configure(model) {
-    model.events = new EventEmitter()
-    return model
+function configure(model, db) {
+  model.events = new EventEmitter()
+  model.withinTransaction = async (func) => {
+    await db.driver.db.query('BEGIN')
+    try {
+      const result = await func()
+      await db.driver.db.query('COMMIT')
+      return result
+    } catch (e) {
+      await db.driver.db.query('ROLLBACK')
+      throw e
+    }
+  }
+  return model
 }
 
 
 module.exports = async () => {
-    console.log("Hello")
-    const conn_url = process.env.DATABASE_URL ? process.env.DATABASE_URL : `postgres://${process.env.PG_USER}:${process.env.PG_PASSWORD}@${process.env.PG_HOST}:${process.env.PG_PORT}/${process.env.PG_NAME}`
-    console.log("Connection URL: " + conn_url)
-    const db = await orm.connectAsync(conn_url)
-    //
-    db.use(transaction)
-    //
-    // // +++ Model definitions
+  const conn_url = `postgres://${process.env.PG_USER}:${process.env.PG_PASSWORD}@${process.env.PG_HOST}:${process.env.PG_PORT}/${process.env.PG_NAME}?pool=false`
+  const db = await orm.connectAsync(conn_url)
 
-    const models = {
-        account: configure(require('./account')(db)),
-        transaction: configure(require('./transaction')(db))
-    }
+  // +++ Model definitions
 
-    await db.syncPromise()
+  const models = {
+    account: configure(require('./account')(db), db),
+    transaction: configure(require('./transaction')(db), db)
+  }
 
-    return models
+  await db.syncPromise()
+
+  return models
 }

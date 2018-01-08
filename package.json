@@ -9,7 +9,6 @@
     "dotenv": "^4.0.0",
     "express": "^4.14.1",
     "orm": "^4.0.2",
-    "orm-transaction": "0.0.2",
     "pg": "^7.4.0",
     "snoowrap": "^1.15.1",
     "stellar-sdk": "^0.8.0"
