@@ -43,8 +43,8 @@ describe('models / account', async () => {
       assert.equal(action.amount, '5.0000000')
     })
 
-    it ('should not deposit on the account if action exists', async () => {
-      const tx = await Transaction.createAsync({
+    it ('should not deposit on the account if action exists', (done) => {
+      Transaction.createAsync({
             memoId: 'testing/foo',
             amount: '1.0000000',
             createdAt: new Date('2018-01-01'),
@@ -54,17 +54,30 @@ describe('models / account', async () => {
             target: 'target',
             hash: 'hash',
             type: 'deposit'
-      })
-      await Action.createAsync({
-        amount: '1.0000000',
-        type: 'deposit',
-        sourceaccount_id: account.id,
-        hash: 'hash'
-      })
-      await account.deposit(tx)
+      }).then((tx) => {
+        Account.events.on('DEPOSIT', async () => {
+          const exists = await Action.existsAsync({
+            hash: 'hash',
+            sourceaccount_id: account.id,
+            type: 'deposit'
+          })
+          assert.ok(exists)
 
-      const reloaded = await Account.getOrCreate('testing', 'foo')
-      assert.equal(reloaded.balance, '1.0000000')
+          let assertExc;
+
+          try {
+            await account.deposit(tx)
+          } catch (exc) {
+            assertedExc = exc
+          }
+
+          assert.equal(assertedExc, 'DUPLICATE_DEPOSIT')
+          const reloaded = await Account.getOrCreate('testing', 'foo')
+          // 1 + the initial transaction, but not three when we deposit again
+          assert.equal(reloaded.balance, '2.0000000')
+          done()
+        })
+      })
     })
   })
 

@@ -130,13 +130,7 @@ describe('adapter', async () => {
       })
     })
 
-    it ('should call withdrawalSubmissionFailed if transaction already exists', (done) => {
-      adapter.on('withdrawalSubmissionFailed', async () => {
-        // account should be refunded
-        const account = await Account.getOrCreate('testing', 'foo')
-        assert.equal('5.0000000', account.balance)
-        done()
-      })
+    it ('refund is performed if transaction already exists', (done) => {
       const Transaction = adapter.config.models.transaction
       const Account = adapter.config.models.account
       const source = 'GCFXHS4GXL6BVUCXBWXGTITROWLVYXQKQLF4YH5O5JT3YZXCYPAFBJZB'
@@ -156,18 +150,23 @@ describe('adapter', async () => {
           type: 'withdrawal',
           target: target,
           source: source
-        }).then(() => {
+        }).then(async () => {
           adapter.config.stellar = {
             address: source,
             createTransaction: () => {}
           }
-          adapter.receiveWithdrawalRequest({
+          await adapter.receiveWithdrawalRequest({
             adapter: 'testing',
             amount: '5',
             uniqueId: 'foo',
             hash: 'hash',
             address: target
           })
+
+          // account should be refunded
+          const account = await Account.getOrCreate('testing', 'foo')
+          assert.equal('5.0000000', account.balance)
+          done()
         })
       })
     })

@@ -33,7 +33,7 @@ module.exports = (db) => {
           this.credited = false
         }
       },
-      afterSave: function (success) {
+      afterSave: async function (success) {
         if (success && !this.credited && this.type === 'deposit') {
           const Account = db.models.account
 
@@ -43,9 +43,15 @@ module.exports = (db) => {
               const adapter = accountParts[0]
               const uniqueId = accountParts[1]
 
-              account = Account.getOrCreate(adapter, uniqueId).then(async (acc) => {
-                await acc.deposit(this)
-              })
+              account = await Account.getOrCreate(adapter, uniqueId)
+              try {
+                await account.deposit(this)
+              } catch (exc) {
+                if (exc !== 'DUPLICATE_DEPOSIT') {
+                  throw exc
+                }
+              }
+
             }
           }
         }

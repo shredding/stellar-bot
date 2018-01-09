@@ -144,40 +144,39 @@ class Adapter extends EventEmitter {
    *     hash: 'aUniqueHash'
    * }
    */
-  receiveWithdrawalRequest (withdrawalRequest) {
-    return new Promise(async (resolve, reject) => {
+  async receiveWithdrawalRequest (withdrawalRequest) {
+    const withdrawalAmount = new Big(withdrawalRequest.amount)
+    const adapter = withdrawalRequest.adapter
+    const uniqueId = withdrawalRequest.uniqueId
+    const hash = withdrawalRequest.hash
+    const address = withdrawalRequest.address
+    const fixedAmount = withdrawalAmount.toFixed(7)
 
-      const withdrawalAmount = new Big(withdrawalRequest.amount)
-      const adapter = withdrawalRequest.adapter
-      const uniqueId = withdrawalRequest.uniqueId
-      const hash = withdrawalRequest.hash
-      const address = withdrawalRequest.address
-      const fixedAmount = withdrawalAmount.toFixed(7)
+    if (!StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
+      return this.onWithdrawalInvalidAddress(uniqueId, address, fixedAmount, hash)
+    }
 
-      if (!StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
-        return this.onWithdrawalInvalidAddress(uniqueId, address, fixedAmount, hash)
+    // Fetch the account
+    const target = await this.Account.getOrCreate(adapter, uniqueId)
+    if (!target.canPay(withdrawalAmount)) {
+      return this.onWithdrawalFailedWithInsufficientBalance(uniqueId, address, fixedAmount, hash)
+    }
+
+    // Withdraw
+    try {
+      await target.withdraw(this.config.stellar, address, withdrawalAmount, hash)
+      this.onWithdrawal(uniqueId, address, fixedAmount, hash)
+    } catch (exc) {
+      if (exc === 'WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST') {
+        return this.onWithdrawalDestinationAccountDoesNotExist(uniqueId, address, fixedAmount, hash)
       }
-
-      // Fetch the account
-      const target = await this.Account.getOrCreate(adapter, uniqueId)
-      if (!target.canPay(withdrawalAmount)) {
-        return this.onWithdrawalFailedWithInsufficientBalance(uniqueId, address, fixedAmount, hash)
+      if (exc === 'WITHDRAWAL_REFERENCE_ERROR') {
+        return this.onWithdrawalReferenceError(uniqueId, address, fixedAmount, hash)
       }
-
-      // Withdraw
-      try {
-        await target.withdraw(this.config.stellar, address, withdrawalAmount, hash)
-        this.onWithdrawal(uniqueId, address, fixedAmount, hash)
-      } catch (exc) {
-        if (exc === 'WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST') {
-          return this.onWithdrawalDestinationAccountDoesNotExist(uniqueId, address, fixedAmount, hash)
-        }
-        if (exc === 'WITHDRAWAL_REFERENCE_ERROR') {
-          return this.onWithdrawalReferenceError(uniqueId, address, fixedAmount, hash)
-        }
+      if (exc === 'WITHDRAWAL_SUBMISSION_FAILED') {
         return this.onWithdrawalSubmissionFailed(uniqueId, address, fixedAmount, hash)
       }
-    })
+    }
   }
 }
 

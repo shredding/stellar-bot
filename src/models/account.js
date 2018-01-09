@@ -35,7 +35,7 @@ module.exports = (db) => {
        * Transaction save.
        */
       transfer: async function (targetAccount, amount, hash) {
-        if (!this.canPay) {
+        if (!this.canPay(amount)) {
           throw new Error('Unsufficient balance. Always check with `canPay` before transferring money!')
         }
 
@@ -55,7 +55,7 @@ module.exports = (db) => {
           })
 
           if (exists) {
-            throw 'DUPLICATE_TRANSFER'
+            throw new 'DUPLICATE_TRANSFER'
           }
           await this.saveAsync()
           await targetAccount.saveAsync()
@@ -83,23 +83,24 @@ module.exports = (db) => {
             type: 'deposit'
           })
 
-          if (!exists) {
-            const sourceBalance = new Big(this.balance)
-            amount = new Big(transaction.amount)
-
-            this.balance = sourceBalance.plus(amount).toFixed(7)
-            transaction.credited = true
-
-            await this.saveAsync()
-            await transaction.saveAsync()
-            await Action.createAsync({
-              amount: amount.toFixed(7),
-              type: 'deposit',
-              sourceaccount_id: this.id,
-              hash: transaction.hash
-            })
-            Account.events.emit('DEPOSIT', this, amount)
+          if (exists) {
+            throw 'DUPLICATE_DEPOSIT'
           }
+          const sourceBalance = new Big(this.balance)
+          amount = new Big(transaction.amount)
+
+          this.balance = sourceBalance.plus(amount).toFixed(7)
+          transaction.credited = true
+
+          await this.saveAsync()
+          await transaction.saveAsync()
+          const action = await Action.createAsync({
+            amount: amount.toFixed(7),
+            type: 'deposit',
+            sourceaccount_id: this.id,
+            hash: transaction.hash
+          })
+          Account.events.emit('DEPOSIT', this, amount)
         })
       },
 
@@ -116,16 +117,15 @@ module.exports = (db) => {
       withdraw: async function (stellar, to, withdrawalAmount, hash) {
         const Transaction = db.models.transaction
         const Action = db.models.action
-        const account = this
 
         return await Account.withinTransaction(async () => {
-          if (!this.canPay) {
+          if (!this.canPay(withdrawalAmount)) {
             throw new Error('Unsufficient balance. Always check with `canPay` before withdrawing money!')
           }
           const sourceBalance = new Big(this.balance)
           const amount = new Big(withdrawalAmount)
           this.balance = sourceBalance.minus(amount).toFixed(7)
-          const refundBalance = new Big(account.balance)
+          const refundBalance = new Big(this.balance)
 
           const now = new Date()
           const doc = {
@@ -147,19 +147,19 @@ module.exports = (db) => {
           if (txExists) {
             // Withdrawal already happened within a concurrent transaction, let's skip
             this.balance = refundBalance.plus(amount).toFixed(7)
-            throw 'WITHDRAWAL_SUBMISSION_FAILED'
+            throw 'DUPLICATE_WITHDRAWAL'
           }
 
           try {
             const tx = await stellar.createTransaction(to, withdrawalAmount.toFixed(7), hash)
             await stellar.send(tx)
           } catch (exc) {
-            account.balance = refundBalance.plus(amount).toFixed(7)
+            this.balance = refundBalance.plus(amount).toFixed(7)
             throw exc
           }
 
+          await this.saveAsync()
           await Transaction.createAsync(doc)
-          await account.saveAsync()
           await Action.createAsync({
             hash: hash,
             type: 'withdrawal',
