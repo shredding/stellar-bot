@@ -158,7 +158,7 @@ class Reddit extends Adapter {
     this.name = 'reddit'
 
     this.pollComments()
-    // this.pollMessages()
+    this.pollMessages()
   }
 
   /**
