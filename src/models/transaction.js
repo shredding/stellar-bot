@@ -36,15 +36,18 @@ module.exports = (db) => {
       afterSave: function (success) {
         if (success && !this.credited && this.type === 'deposit') {
           const Account = db.models.account
-          const accountParts = this.memoId.replace(/\s/g, '').split('/')
 
-          if (accountParts.length === 2) {
-            const adapter = accountParts[0]
-            const uniqueId = accountParts[1]
+          if (this.memoId) {
+            const accountParts = this.memoId.replace(/\s/g, '').split('/')
 
-            account = Account.getOrCreate(adapter, uniqueId).then(async (acc) => {
-              await acc.deposit(this)
-            })
+            if (accountParts.length === 2) {
+              const adapter = accountParts[0]
+              const uniqueId = accountParts[1]
+
+              account = Account.getOrCreate(adapter, uniqueId).then(async (acc) => {
+                await acc.deposit(this)
+              })
+            }
           }
         }
       }
