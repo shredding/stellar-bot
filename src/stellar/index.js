@@ -73,12 +73,21 @@ module.exports = async function (models) {
   return {
     address: publicKey,
     events: events,
+
+    /**
+     * Build a transaction into the network.
+     *
+     * to should be a public address
+     * amount can be a string or a Big
+     * hash should just be something unique - we use the msg id from reddit,
+     * but a uuid4 or sth like that would work as well.
+     */
     createTransaction: function (to, amount, hash) {
       let data = {to, amount, hash}
       return new Promise(function (resolve, reject) {
         // Do not deposit to self, it wouldn't make sense
         if (to === publicKey) {
-          data.status = 'WITHDRAWAL_REFERENCE_ERROR'
+          data = 'WITHDRAWAL_REFERENCE_ERROR'
           return reject(data)
         }
 
@@ -88,7 +97,7 @@ module.exports = async function (models) {
         server.loadAccount(to)
           // If the account is not found, surface a nicer error message for logging.
           .catch(StellarSdk.NotFoundError, function (error) {
-            data.status = 'WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST'
+            data = 'WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST'
             return reject(data)
           })
           // If there was no error, load up-to-date information on your account.
@@ -116,6 +125,10 @@ module.exports = async function (models) {
           })
       })
     },
+
+    /**
+     * Send a transaction into the horizon network
+     */
     send: async function (tx) {
       return new Promise(async (resolve, reject) => {
         try {

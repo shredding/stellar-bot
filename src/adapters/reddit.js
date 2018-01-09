@@ -21,6 +21,13 @@ function getR() {
   return r
 }
 
+
+/**
+ * Reddit sometimes get's out of reach and throws 503.
+ *
+ * This is not very problematic for us, as we can collect comments and messages later
+ * on and only very, very rarely tips will fail (leaving the balance untouched).
+ */
 async function callReddit(func, data, client) {
   client = client || getR()
 
@@ -31,10 +38,11 @@ async function callReddit(func, data, client) {
   }
 }
 
+/**
+ * Adds the bot footer to the message.
+ */
 function formatMessage(txt) {
   return txt +
-    '\n\n\n\n' +
-    '*This bot is in BETA Phase. Everything runs on the testnet. Do not send real XLM!*' +
     '\n\n\n\n' +
     '[Deposit](https://www.reddit.com/user/stellar_bot/comments/7o2ex9/deposit/) | ' +
     `[Withdraw](https://np.reddit.com/message/compose/?to=${process.env.REDDIT_USER}&subject=Withdraw&message=Amount%20XLM%0Aaddress%20here) | ` +
@@ -50,7 +58,7 @@ class Reddit extends Adapter {
     await callReddit('composeMessage', {
       to: sourceAccount.uniqueId,
       subject: 'XLM Deposit',
-      text: formatMessage(`Thank you. ${amount} XLM have been sucessfully deposited to your account.`)
+      text: formatMessage(`**${amount} XLM** have been sucessfully deposited to your account.`)
     })
   }
 
@@ -59,12 +67,12 @@ class Reddit extends Adapter {
     callReddit('composeMessage', {
       to: tip.sourceId,
       subject: 'Tipping failed',
-      text: formatMessage(`Sorry. I can not tip for you. Your balance is insufficient. Deposit and try again.`)
+      text: formatMessage(`I can not tip for you. Your balance is insufficient. Deposit and try again.`)
     })
   }
 
   async onTipTransferFailed(tip, amount) {
-    console.log(`Tip tranfer failed for ${tip.sourceId}.`)
+    console.log(`Tip transfer failed for ${tip.sourceId}.`)
     callReddit('composeMessage', {
       to: tip.sourceId,
       subject: 'Tipping failed',
@@ -82,7 +90,7 @@ class Reddit extends Adapter {
   }
 
   async onTip (tip, amount) {
-    console.log(`Tip from ${tip.sourceId} to ${tip.targetId}.`)
+    console.log(`${amount} tip from ${tip.sourceId} to ${tip.targetId}.`)
     await callReddit('reply', formatMessage(`You tipped **${amount} XLM** to *${tip.targetId}*.`), tip.original)
     callReddit('composeMessage', {
       to: tip.sourceId,
@@ -140,7 +148,7 @@ class Reddit extends Adapter {
     await callReddit('composeMessage', {
       to: uniqueId,
       subject: 'XLM Withdrawal',
-      text: formatMessage(`Thank's for your request. ${amount} XLM are on their way to ${address}.`)
+      text: formatMessage(`**${amount} XLM** are on their way to ${address}.`)
     })
   }
 
@@ -153,6 +161,9 @@ class Reddit extends Adapter {
     this.pollMessages()
   }
 
+  /**
+   * Polls comments in the registered subreddits every 2 secs.
+   */
   async pollComments (lastBatch) {
     lastBatch = lastBatch || []
 
@@ -165,7 +176,6 @@ class Reddit extends Adapter {
     comments.filter((comment) => {
       return lastBatch.every(batch => batch.id != comment.id)
     }).forEach(async (comment) => {
-
       const tipAmount = this.extractTipAmount(comment.body)
       if (tipAmount) {
         const targetComment = await callReddit('getComment', comment.parent_id)
@@ -175,7 +185,8 @@ class Reddit extends Adapter {
             sourceId: comment.author.name,
             targetId: await targetComment.author.name,
             amount: tipAmount,
-            original: comment
+            original: comment,
+            hash: comment.id
           })
         }
       }
@@ -186,6 +197,9 @@ class Reddit extends Adapter {
     this.pollComments(lastBatch)
   }
 
+  /**
+   * Polls unread messages to the bot and answers them.
+   */
   async pollMessages () {
     const messages = await callReddit('getUnreadMessages') || []
     let processedMessages = []
@@ -193,13 +207,13 @@ class Reddit extends Adapter {
     await messages
       .filter(m => ['Withdraw', 'Balance'].indexOf(m.subject) > -1 && !m.was_comment)
       .forEach(async (m) => {
-           // Check the balance of the user
+        // Check the balance of the user
         if (m.subject === 'Balance') {
           const balance = await this.requestBalance(this.name, m.author.name)
           await callReddit('composeMessage', {
             to: m.author.name,
             subject: 'XLM Balance',
-            text: formatMessage(`Thank you. Your current balance is ${balance} XLM.`)
+            text: formatMessage(`Your current balance is **${balance} XLM**.`)
           })
           console.log(`Balance request answered for ${m.author.name}.`)
           await callReddit('markMessagesAsRead', [m])
@@ -213,7 +227,7 @@ class Reddit extends Adapter {
             await callReddit('composeMessage', {
               to: m.author.name,
               subject: 'XLM Withdrawal failed',
-              text: formatMessage(`We could not withdraw. Please make sure that the first line of the body is withdrawal amount and the second line your public key.`)
+              text: formatMessage(`I could not withdraw. Please make sure that the first line of the body is withdrawal amount and the second line your public key.`)
             })
           } else {
               console.log(`XLM withdrawal initiated for ${m.author.name}.`)
@@ -234,11 +248,17 @@ class Reddit extends Adapter {
     this.pollMessages()
   }
 
+  /**
+   * All supported tipping formats ...
+   */
   extractTipAmount (tipText) {
     const matches =  tipText.match(/\+\+\+[\s{1}]?[\d\.]*[\s{1}]?XLM/i)
     return matches ? matches[0].replace('+++', '').replace(/xlm/i, '').replace(/\s/g, '') : undefined
   }
 
+  /**
+   * Extract withdrawal information from the message.
+   */
   extractWithdrawal (body) {
     const parts = body.slice(body.indexOf('<p>') + 3, body.indexOf('</p>')).split('\n')
 
