@@ -252,11 +252,6 @@ class Reddit extends Adapter {
    * All supported tipping formats ...
    */
   extractTipAmount (tipText) {
-    if (process.env.MODE === 'development') {
-      if (tipText.indexOf('TESTING') < 0) {
-        return undefined
-      }
-    }
     const matches =  tipText.match(/\+\+\+[\s{1}]?[\d\.]*[\s{1}]?XLM/i)
     return matches ? matches[0].replace('+++', '').replace(/xlm/i, '').replace(/\s/g, '') : undefined
   }
