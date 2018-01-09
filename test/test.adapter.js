@@ -207,15 +207,22 @@ describe('adapter', async () => {
       })
     })
 
-    it ('should perform a withdrawal', (done) => {
+    it ('should perform a withdrawal and create action', (done) => {
+      const Transaction = adapter.config.models.transaction
+      const Account = adapter.config.models.account
+      const Action = adapter.config.models.action
+
       adapter.on('withdrawal', async () => {
         // account should be refunded
         const account = await Account.getOrCreate('testing', 'foo')
+        const action = await Action.oneAsync({hash: 'hash', type: 'withdrawal', sourceaccount_id: account.id})
         assert.equal('0.0000000', account.balance)
+
+        assert.equal('5.0000000', action.amount)
+        assert.equal('GA2C5RFPE6GCKMY3US5PAB6UZLKIGSPIUKSLRB6Q723BM2OARMDUYEJ5', action.address)
         done()
       })
-      const Transaction = adapter.config.models.transaction
-      const Account = adapter.config.models.account
+
       const source = 'GCFXHS4GXL6BVUCXBWXGTITROWLVYXQKQLF4YH5O5JT3YZXCYPAFBJZB'
       const target = 'GA2C5RFPE6GCKMY3US5PAB6UZLKIGSPIUKSLRB6Q723BM2OARMDUYEJ5'
       const now = new Date()
@@ -247,7 +254,8 @@ describe('adapter', async () => {
       let tip = {
         amount: '1.12',
         adapter: 'testing',
-        sourceId: 'foo'
+        sourceId: 'foo',
+        hash: 'hash'
       }
 
       adapter.on('tipWithInsufficientBalance', () => done())
@@ -265,14 +273,46 @@ describe('adapter', async () => {
           amount: '1',
           adapter: 'testing',
           sourceId: 'foo',
-          targetId: 'foo'
+          targetId: 'foo',
+          hash: 'hash'
         }
         adapter.on('tipReferenceError', () => done())
         adapter.receivePotentialTip(tip)
       })
     })
 
-    it ('should transfer money and call with onTip', (done) => {
+    it ('should not do anything if hash already exists', async() => {
+      source = await adapter.Account.createAsync({
+        adapter: 'testing',
+        uniqueId: 'foo',
+        balance: '5.0000000'
+      })
+      await adapter.config.models.action.createAsync({
+        amount: '1.0000000',
+        type: 'transfer',
+        sourceaccount_id: source.id,
+        hash: 'hash'
+      })
+
+      let tip = {
+          amount: '1',
+          adapter: 'testing',
+          sourceId: 'foo',
+          targetId: 'bar',
+          hash: 'hash'
+      }
+      await adapter.receivePotentialTip(tip)
+
+      source = await adapter.Account.oneAsync({adapter: 'testing', uniqueId: 'foo'})
+      target = await adapter.Account.oneAsync({adapter: 'testing', uniqueId: 'bar'})
+      actionCount = await adapter.config.models.action.countAsync()
+
+      assert.equal(source.balance, '5.0000000')
+      assert.equal(target.balance, '0.0000000')
+      assert.equal(actionCount, 1)
+    })
+
+    it ('should transfer money, create action and call with onTip', (done) => {
       adapter.Account.createAsync({
         adapter: 'testing',
         uniqueId: 'foo',
@@ -282,16 +322,25 @@ describe('adapter', async () => {
           amount: '1',
           adapter: 'testing',
           sourceId: 'foo',
-          targetId: 'bar'
+          targetId: 'bar',
+          hash: 'hash'
         }
         adapter.on('tip', async (tip, amount) => {
           assert.equal('1.0000000', amount)
 
           source = await adapter.Account.oneAsync({adapter: 'testing', uniqueId: 'foo'})
           target = await adapter.Account.oneAsync({adapter: 'testing', uniqueId: 'bar'})
+          action = await adapter.config.models.action.oneAsync({sourceaccount_id: source.id, hash: 'hash', type: 'transfer'})
 
           assert.equal(source.balance, '4.0000000')
           assert.equal(target.balance, '1.0000000')
+
+          assert.equal(action.targetaccount_id, target.id)
+          assert.equal(action.sourceaccount_id, source.id)
+          assert.equal(action.amount, '1.0000000')
+          assert.equal(action.type, 'transfer')
+          assert.equal(action.hash, 'hash')
+
           done()
         })
         adapter.receivePotentialTip(tip)

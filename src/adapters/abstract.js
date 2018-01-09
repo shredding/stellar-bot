@@ -83,7 +83,8 @@ class Adapter extends EventEmitter {
    *    adapter: "adapter_name", (e.g. "reddit")
    *    sourceId: "unique_source_id", (e.g. reddit username)
    *    targetId: "foo_bar" // the target id
-   *    amount: "123.12",
+   *    amount: "123.12",,
+   *    hash: "asfcewef" // some kind of hash, e.g. comment hash, must be unique per sourceId
    *  }
    *
    *  You'll receive the tip object within every hook, so you can add stuff you need in the callbacks
@@ -92,6 +93,7 @@ class Adapter extends EventEmitter {
       // Let's see if the source has a sufficient balance
       const source = await this.Account.getOrCreate(tip.adapter, tip.sourceId)
       const payment = new Big(tip.amount)
+      const hash = tip.hash
 
       if (!source.canPay(payment)) {
         return this.onTipWithInsufficientBalance(tip, payment.toFixed(7))
@@ -104,12 +106,14 @@ class Adapter extends EventEmitter {
       const target = await this.Account.getOrCreate(tip.adapter, tip.targetId)
 
       // ... and tip.
-      source.transfer(target, payment)
+      source.transfer(target, payment, hash)
         .then(() => {
           this.onTip(tip, payment.toFixed(7))
         })
-        .catch(() => {
-          this.onTipTransferFailed(tip, payment.toFixed(7))
+        .catch((exc) => {
+          if (exc !== 'DUPLICATE_TRANSFER') {
+            this.onTipTransferFailed(tip, payment.toFixed(7))
+          }
         })
   }
 

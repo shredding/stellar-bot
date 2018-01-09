@@ -20,11 +20,11 @@ module.exports = (db) => {
       credited: Boolean
     }, {
     validations : {
-      source : orm.enforce.required(),
-      target : orm.enforce.required(),
-      type : orm.enforce.required(),
-      amount : orm.enforce.required(),
-      createdAt: orm.enforce.required(),
+      source : orm.enforce.required('source is required'),
+      target : orm.enforce.required('target is required'),
+      type : orm.enforce.required('type is required'),
+      amount : orm.enforce.required('amount is required'),
+      createdAt: orm.enforce.required('createdAt is required'),
       hash: [orm.enforce.unique('Hash already exists.'), orm.enforce.required()]
     },
     hooks: {

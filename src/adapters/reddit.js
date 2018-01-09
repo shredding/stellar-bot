@@ -72,7 +72,7 @@ class Reddit extends Adapter {
   }
 
   async onTipTransferFailed(tip, amount) {
-    console.log(`Tip tranfer failed for ${tip.sourceId}.`)
+    console.log(`Tip transfer failed for ${tip.sourceId}.`)
     callReddit('composeMessage', {
       to: tip.sourceId,
       subject: 'Tipping failed',
@@ -158,7 +158,7 @@ class Reddit extends Adapter {
     this.name = 'reddit'
 
     this.pollComments()
-    this.pollMessages()
+    // this.pollMessages()
   }
 
   /**
@@ -176,7 +176,6 @@ class Reddit extends Adapter {
     comments.filter((comment) => {
       return lastBatch.every(batch => batch.id != comment.id)
     }).forEach(async (comment) => {
-
       const tipAmount = this.extractTipAmount(comment.body)
       if (tipAmount) {
         const targetComment = await callReddit('getComment', comment.parent_id)
@@ -186,7 +185,8 @@ class Reddit extends Adapter {
             sourceId: comment.author.name,
             targetId: await targetComment.author.name,
             amount: tipAmount,
-            original: comment
+            original: comment,
+            hash: comment.id
           })
         }
       }
@@ -207,7 +207,7 @@ class Reddit extends Adapter {
     await messages
       .filter(m => ['Withdraw', 'Balance'].indexOf(m.subject) > -1 && !m.was_comment)
       .forEach(async (m) => {
-           // Check the balance of the user
+        // Check the balance of the user
         if (m.subject === 'Balance') {
           const balance = await this.requestBalance(this.name, m.author.name)
           await callReddit('composeMessage', {
@@ -252,6 +252,11 @@ class Reddit extends Adapter {
    * All supported tipping formats ...
    */
   extractTipAmount (tipText) {
+    if (process.env.MODE === 'development') {
+      if (tipText.indexOf('TESTING') < 0) {
+        return undefined
+      }
+    }
     const matches =  tipText.match(/\+\+\+[\s{1}]?[\d\.]*[\s{1}]?XLM/i)
     return matches ? matches[0].replace('+++', '').replace(/xlm/i, '').replace(/\s/g, '') : undefined
   }

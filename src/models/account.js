@@ -34,21 +34,38 @@ module.exports = (db) => {
        *
        * Transaction save.
        */
-      transfer: async function (targetAccount, amount) {
+      transfer: async function (targetAccount, amount, hash) {
         if (!this.canPay) {
-          throw new Error('Unsufficient balance. Always check with `canPay` before tranferring money!')
+          throw new Error('Unsufficient balance. Always check with `canPay` before transferring money!')
         }
 
         return await Account.withinTransaction(async () => {
+          const Action = db.models.action
           const sourceBalance = new Big(this.balance)
           const targetBalance = new Big(targetAccount.balance)
-          amount = new Big(amount)
 
+          amount = new Big(amount)
           this.balance = sourceBalance.minus(amount).toFixed(7)
           targetAccount.balance = targetBalance.plus(amount).toFixed(7)
 
+          const exists = await Action.existsAsync({
+            hash: hash,
+            sourceaccount_id: this.id,
+            type: 'transfer'
+          })
+
+          if (exists) {
+            throw 'DUPLICATE_TRANSFER'
+          }
           await this.saveAsync()
           await targetAccount.saveAsync()
+          await Action.createAsync({
+            amount: amount.toFixed(7),
+            type: 'transfer',
+            sourceaccount_id: this.id,
+            targetaccount_id: targetAccount.id,
+            hash: hash
+          })
           Account.events.emit('TRANSFER', this, targetAccount, amount)
         })
       },
@@ -58,15 +75,31 @@ module.exports = (db) => {
        */
       deposit: async function (transaction) {
         return await Account.withinTransaction(async () => {
-          const sourceBalance = new Big(this.balance)
-          amount = new Big(transaction.amount)
+          const Action = db.models.action
 
-          this.balance = sourceBalance.plus(amount).toFixed(7)
-          transaction.credited = true
+          const exists = await Action.existsAsync({
+            hash: transaction.hash,
+            sourceaccount_id: this.id,
+            type: 'deposit'
+          })
 
-          await this.saveAsync()
-          await transaction.saveAsync()
-          Account.events.emit('DEPOSIT', this, amount)
+          if (!exists) {
+            const sourceBalance = new Big(this.balance)
+            amount = new Big(transaction.amount)
+
+            this.balance = sourceBalance.plus(amount).toFixed(7)
+            transaction.credited = true
+
+            await this.saveAsync()
+            await transaction.saveAsync()
+            await Action.createAsync({
+              amount: amount.toFixed(7),
+              type: 'deposit',
+              sourceaccount_id: this.id,
+              hash: transaction.hash
+            })
+            Account.events.emit('DEPOSIT', this, amount)
+          }
         })
       },
 
@@ -82,6 +115,7 @@ module.exports = (db) => {
        */
       withdraw: async function (stellar, to, withdrawalAmount, hash) {
         const Transaction = db.models.transaction
+        const Action = db.models.action
         const account = this
 
         return await Account.withinTransaction(async () => {
@@ -104,13 +138,13 @@ module.exports = (db) => {
             hash: hash,
             type: 'withdrawal'
           }
-          const exists = await Transaction.existsAsync({
+          const txExists = await Transaction.existsAsync({
             hash: hash,
             type: 'withdrawal',
             target: to
           })
 
-          if (exists) {
+          if (txExists) {
             // Withdrawal already happened within a concurrent transaction, let's skip
             this.balance = refundBalance.plus(amount).toFixed(7)
             throw 'WITHDRAWAL_SUBMISSION_FAILED'
@@ -126,6 +160,13 @@ module.exports = (db) => {
 
           await Transaction.createAsync(doc)
           await account.saveAsync()
+          await Action.createAsync({
+            hash: hash,
+            type: 'withdrawal',
+            sourceaccount_id: this.id,
+            amount: amount.toFixed(7),
+            address: to
+          })
         })
       }
     },
@@ -144,8 +185,8 @@ module.exports = (db) => {
     },
 
     validations : {
-      adapter : orm.enforce.required(),
-      uniqueId : orm.enforce.required()
+      adapter : orm.enforce.required('adapter is required'),
+      uniqueId : orm.enforce.required('uniqueId is required')
     }
   })
 
