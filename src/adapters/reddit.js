@@ -1,6 +1,6 @@
 const Snoowrap = require('snoowrap')
 const Adapter = require('./abstract')
-const utils = require('../utils')
+const utils = require('../utils/utils')
 
 // *** +++ Reddit API +
 function getR() {
