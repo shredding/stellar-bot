@@ -30,7 +30,8 @@ module.exports = async () => {
 
   const models = {
     account: configure(require('./account')(db), db),
-    transaction: configure(require('./transaction')(db), db)
+    transaction: configure(require('./transaction')(db), db),
+    action: configure(require('./action')(db), db),
   }
 
   await db.syncPromise()
