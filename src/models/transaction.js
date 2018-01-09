@@ -39,7 +39,6 @@ module.exports = (db) => {
 
           if (this.memoId) {
             const accountParts = this.memoId.replace(/\s/g, '').split('/')
-
             if (accountParts.length === 2) {
               const adapter = accountParts[0]
               const uniqueId = accountParts[1]
