@@ -346,4 +346,24 @@ describe('adapter', async () => {
       })
     })
   })
+
+  describe('setAccountOptions', () => {
+    it ('should return an object containing the publc wallet address if the address is valid', () => {
+      let desiredWalletAddress = "GDTWLOWE34LFHN4Z3LCF2EGAMWK6IHVAFO65YYRX5TMTER4MHUJIWQKB"
+      let optionsObj = { walletAddress : desiredWalletAddress }
+      let filteredOptions = adapter.setAccountOptions(optionsObj)
+      assert.equal(filteredOptions.walletAddress, desiredWalletAddress, "Wallet address should be the same as it was when it came in")
+    })
+
+    it ('should throw an error if you provide an invalid wallet address', (done) => {
+      let desiredWalletAddress = "badaddress"
+      let optionsObj = { walletAddress : desiredWalletAddress }
+
+      try {
+        let filteredOptions = adapter.setAccountOptions(optionsObj)
+      } catch (e) {
+        done()
+      }
+    })
+  })
 })

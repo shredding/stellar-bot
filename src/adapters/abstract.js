@@ -199,6 +199,30 @@ class Adapter extends EventEmitter {
       }
     }
   }
+
+  /**
+   * Validates the options provided and gives back an objet wher the key is the request option
+   * and the value is the value which will be set on an account.
+   *
+   * Feel free to do any validation you like. Just be sure to handle errors / rejections to your liking.
+   *
+   * Technically 'options' can look like anything you want, but right now we only support changing wallet address.
+   *
+   * {
+   *     walletAddress: 'GDTWLOWE34LFHN4Z3LCF2EGAMWK6IHVAFO65YYRX5TMTER4MHUJIWQKB',
+   * }
+   *
+   */
+    setAccountOptions(options) {
+      let walletAddr = options.walletAddress
+      if(!StellarSdk.StrKey.isValidEd25519PublicKey(walletAddr)) {
+        throw new Error("setAccountOptions was given a bad public key")
+      }
+      // We could just return `options` here, but in the interest
+      // of future proofing / illustrating what we're more likely to do later as
+      // options are added...
+      return {walletAddress : walletAddr}
+  }
 }
 
 module.exports = Adapter
