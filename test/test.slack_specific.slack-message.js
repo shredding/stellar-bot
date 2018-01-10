@@ -1,6 +1,6 @@
 const assert = require('assert')
 const sutil = require('../src/adapters/slack/utils')
-const message = require('../src/slack_specific/slack-mesage')
+const message = require('../src/adapters/slack/slack-mesage')
 
 describe('slack-message', () => {
   describe('uniqueUserID', () => {

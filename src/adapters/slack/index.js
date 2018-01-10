@@ -2,7 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const app = express()
 const Adapter = require('../abstract')
-const slmessage = require('../../slack_specific/slack-mesage')
+const slmessage = require('./slack-mesage')
 
 /// Set up exress app
 app.set('port', (process.env.PORT || 5000));
