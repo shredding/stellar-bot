@@ -8,6 +8,7 @@ describe('models / account', async () => {
   let Transaction
   let Action
   let account
+  let accountWithWallet
 
   beforeEach(async () => {
     const config = await require('./setup')()
@@ -19,6 +20,13 @@ describe('models / account', async () => {
       adapter: 'testing',
       uniqueId: 'foo',
       balance: '1.0000000'
+    })
+
+    accountWithWallet = await Account.createAsync({
+      adapter: 'testing',
+      uniqueId: 'goodwall',
+      balance: '1.0000000',
+      publicWalletAddress: 'GDO7HAX2PSR6UN3K7WJLUVJD64OK3QLDXX2RPNMMHI7ZTPYUJOHQ6WTN'
     })
   })
 
@@ -112,6 +120,7 @@ describe('models / account', async () => {
     it ('should set the wallet address if it is a valid stellar wallet address', async() => {
       const desiredWalletAddress = "GDTWLOWE34LFHN4Z3LCF2EGAMWK6IHVAFO65YYRX5TMTER4MHUJIWQKB"
       await account.setWalletAddress(desiredWalletAddress)
+      account = await Account.getOrCreate(account.adapter, account.uniqueId)
       assert.equal(account.publicWalletAddress, desiredWalletAddress, "Public wallet address should now be set to desired wallet address")
     })
 
@@ -121,6 +130,18 @@ describe('models / account', async () => {
       account.setWalletAddress(desiredWalletAddress).catch (e => {
         done()
       })
+    })
+  })
+
+  describe('userHasWalletAddress', () => {
+    it ('should return true if the user with the given uniqueId for the given adapter has a wallet address set', async () => {
+      const userHasWalletAddress = await Account.userHasWalletAddress('testing', 'goodwall')
+      assert.equal(userHasWalletAddress, true, "User should have a wallet address")
+    })
+
+    it ('should return false if the given user does not have a wallet address set', async () => {
+      const userHasWalletAddress = await Account.userHasWalletAddress('testing', 'foo')
+      assert.equal(userHasWalletAddress, false, "User should not have a wallet address")
     })
   })
 })

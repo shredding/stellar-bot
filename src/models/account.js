@@ -232,10 +232,10 @@ module.exports = (db) => {
     })
   }
 
-  Account.userExists = async function (adapter, uniqueId) {
+  Account.userHasWalletAddress = async function (adapter, uniqueId) {
     return await Account.withinTransaction(async () => {
       let a = await Account.oneAsync({ adapter, uniqueId })
-      return a != null
+      return StellarSdk.StrKey.isValidEd25519PublicKey(a.publicWalletAddress)
     })
   }
 
