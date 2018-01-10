@@ -1,5 +1,5 @@
 const assert = require('assert')
-const utils = require('../src/utils/utils')
+const utils = require('../src/utils')
 
 
 describe('models / transaction', async () => {

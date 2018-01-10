@@ -1,5 +1,5 @@
 const assert = require('assert')
-const sutil = require('../src/utils/slack')
+const sutil = require('../src/adapters/slack/utils')
 
 describe('slack-utils', () => {
   describe('extract user id', () => {

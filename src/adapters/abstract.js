@@ -1,4 +1,4 @@
-const utils = require('../utils/utils')
+const utils = require('../utils')
 const Big = require('big.js')
 const StellarSdk = require('stellar-sdk')
 const EventEmitter = require('events')
