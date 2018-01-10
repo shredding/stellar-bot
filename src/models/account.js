@@ -1,5 +1,6 @@
 const orm = require('orm')
 const Big = require('big.js')
+const StellarSdk = require('stellar-sdk')
 
 module.exports = (db) => {
 
@@ -16,7 +17,8 @@ module.exports = (db) => {
       uniqueId: String,
       createdAt: String,
       updatedAt: String,
-      balance: String
+      balance: String,
+      publicWalletAddress: String
     }, {
 
     methods: {
@@ -174,6 +176,15 @@ module.exports = (db) => {
     hooks: {
       beforeSave: function () {
         const now = new Date()
+
+        // If our publicWalletAddress is set, we need to make sure it's a valid wallet address before saving
+        if(typeof this.publicWalletAddress !== 'undefined' && this.publicWalletAddress !== null) {
+          if(!StellarSdk.StrKey.isValidEd25519PublicKey(this.publicWalletAddress)) {
+            this.publicWalletAddress = null
+            throw 'BAD_PUBLIC_WALLET_ADDRESS'
+          }
+        }
+
         if (!this.createdAt) {
           this.createdAt = now.toISOString()
         }
@@ -186,7 +197,8 @@ module.exports = (db) => {
 
     validations : {
       adapter : orm.enforce.required('adapter is required'),
-      uniqueId : orm.enforce.required('uniqueId is required')
+      uniqueId : orm.enforce.required('uniqueId is required'),
+      publicWalletAddress : orm.enforce.unique(`Can't register the same wallet for two different users`),
     }
   })
 
