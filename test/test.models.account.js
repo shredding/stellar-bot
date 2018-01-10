@@ -133,15 +133,15 @@ describe('models / account', async () => {
     })
   })
 
-  describe('userHasWalletAddress', () => {
-    it ('should return true if the user with the given uniqueId for the given adapter has a wallet address set', async () => {
-      const userHasWalletAddress = await Account.userHasWalletAddress('testing', 'goodwall')
-      assert.equal(userHasWalletAddress, true, "User should have a wallet address")
+  describe('walletAddressForUser', () => {
+    it ('should return the user`s wallet if the user with the given uniqueId for the given adapter has a wallet address set', async () => {
+      const usersWallet = await Account.walletAddressForUser('testing', 'goodwall')
+      assert.equal(usersWallet, `GDO7HAX2PSR6UN3K7WJLUVJD64OK3QLDXX2RPNMMHI7ZTPYUJOHQ6WTN`, "User should have a wallet address")
     })
 
-    it ('should return false if the given user does not have a wallet address set', async () => {
-      const userHasWalletAddress = await Account.userHasWalletAddress('testing', 'foo')
-      assert.equal(userHasWalletAddress, false, "User should not have a wallet address")
+    it ('should return null if the given user does not have a wallet address set', async () => {
+      const usersWallet = await Account.walletAddressForUser('testing', 'foo')
+      assert.equal(usersWallet, null, "User should not have a wallet address")
     })
   })
 })
