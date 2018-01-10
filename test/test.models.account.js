@@ -26,7 +26,7 @@ describe('models / account', async () => {
       adapter: 'testing',
       uniqueId: 'goodwall',
       balance: '1.0000000',
-      publicWalletAddress: 'GDO7HAX2PSR6UN3K7WJLUVJD64OK3QLDXX2RPNMMHI7ZTPYUJOHQ6WTN'
+      walletAddress: 'GDO7HAX2PSR6UN3K7WJLUVJD64OK3QLDXX2RPNMMHI7ZTPYUJOHQ6WTN'
     })
   })
 
@@ -121,7 +121,7 @@ describe('models / account', async () => {
       const desiredWalletAddress = "GDTWLOWE34LFHN4Z3LCF2EGAMWK6IHVAFO65YYRX5TMTER4MHUJIWQKB"
       await account.setWalletAddress(desiredWalletAddress)
       account = await Account.getOrCreate(account.adapter, account.uniqueId)
-      assert.equal(account.publicWalletAddress, desiredWalletAddress, "Public wallet address should now be set to desired wallet address")
+      assert.equal(account.walletAddress, desiredWalletAddress, "Public wallet address should now be set to desired wallet address")
     })
 
     it ('should throw an error if you provide an invalid wallet address', (done) => {
