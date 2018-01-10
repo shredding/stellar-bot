@@ -107,4 +107,20 @@ describe('models / account', async () => {
       assert.ok(!account.canPay('2'))
     })
   })
+
+  describe('setWalletAddress', () => {
+    it ('should set the wallet address if it is a valid stellar wallet address', async() => {
+      const desiredWalletAddress = "GDTWLOWE34LFHN4Z3LCF2EGAMWK6IHVAFO65YYRX5TMTER4MHUJIWQKB"
+      await account.setWalletAddress(desiredWalletAddress)
+      assert.equal(account.publicWalletAddress, desiredWalletAddress, "Public wallet address should now be set to desired wallet address")
+    })
+
+    it ('should set the wallet address if it is a valid stellar wallet address', (done) => {
+      const desiredWalletAddress = "badaddress"
+
+      account.setWalletAddress(desiredWalletAddress).catch (e => {
+        done()
+      })
+    })
+  })
 })

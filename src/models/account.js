@@ -1,6 +1,7 @@
 const orm = require('orm')
 const Big = require('big.js')
 const StellarSdk = require('stellar-sdk')
+const Promise = require('../../node_modules/bluebird')
 
 module.exports = (db) => {
 
@@ -170,6 +171,14 @@ module.exports = (db) => {
             address: to
           })
         })
+      },
+
+      setWalletAddress: async function (newAddress) {
+        this.publicWalletAddress = newAddress
+        await this.saveAsync().catch(e => {
+          console.error(`Error while setting public wallet address of Account object:\nNewAddress: ${newAddress}\nlException:${JSON.stringify(exception)}`)
+          return Promise.reject(e)
+        })
       }
     },
 
@@ -181,7 +190,7 @@ module.exports = (db) => {
         if(typeof this.publicWalletAddress !== 'undefined' && this.publicWalletAddress !== null) {
           if(!StellarSdk.StrKey.isValidEd25519PublicKey(this.publicWalletAddress)) {
             this.publicWalletAddress = null
-            throw 'BAD_PUBLIC_WALLET_ADDRESS'
+            return Promise.reject(new Error('BAD_PUBLIC_WALLET_ADDRESS'))
           }
         }
 
