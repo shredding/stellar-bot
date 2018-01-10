@@ -2,6 +2,7 @@ const utils = require('../utils/utils')
 const Big = require('big.js')
 const StellarSdk = require('stellar-sdk')
 const EventEmitter = require('events')
+const Promise = require('../../node_modules/bluebird')
 
 class Adapter extends EventEmitter {
 
@@ -160,7 +161,7 @@ class Adapter extends EventEmitter {
    * {
    *     adapter: 'reddit',
    *     uniqueId: 'the-dark-coder'
-   *     address: 'aStellarAddress',
+   *     address?: 'aStellarAddress', // optional
    *     amount: '12.12'
    *     hash: 'aUniqueHash'
    * }
@@ -170,7 +171,10 @@ class Adapter extends EventEmitter {
     const adapter = withdrawalRequest.adapter
     const uniqueId = withdrawalRequest.uniqueId
     const hash = withdrawalRequest.hash
-    const address = withdrawalRequest.address
+    const address = withdrawalRequest.address || await this.Account.walletAddressForUser(adapter, uniqueId)
+    if(typeof address === 'undefined' || address === null) {
+      return Promise.reject(new Error(`Tried to make a withdrawal request with no valid address in args or attached to user\nRequest: ${JSON.stringify(withdrawalRequest)}`))
+    }
     const fixedAmount = withdrawalAmount.toFixed(7)
 
     if (!StellarSdk.StrKey.isValidEd25519PublicKey(address)) {

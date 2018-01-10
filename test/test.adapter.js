@@ -40,6 +40,18 @@ describe('adapter', async () => {
   })
 
   describe('receiveWithdrawalRequest', () => {
+
+    it (`should throw an error if no address is given and the account doesn't have an address on file in the db`, (done) => {
+      adapter.receiveWithdrawalRequest({
+          adapter: 'testing',
+          amount: '666',
+          uniqueId: 'foo',
+          hash: 'bar'
+        }).catch ((e) => {
+          done()
+        })
+    })
+
     it ('should call withdrawalInvalidAddress if invalid address is given', (done) => {
       adapter.on('withdrawalInvalidAddress', () => done())
       adapter.receiveWithdrawalRequest({
