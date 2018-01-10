@@ -115,7 +115,7 @@ describe('models / account', async () => {
       assert.equal(account.publicWalletAddress, desiredWalletAddress, "Public wallet address should now be set to desired wallet address")
     })
 
-    it ('should set the wallet address if it is a valid stellar wallet address', (done) => {
+    it ('should throw an error if you provide an invalid wallet address', (done) => {
       const desiredWalletAddress = "badaddress"
 
       account.setWalletAddress(desiredWalletAddress).catch (e => {
