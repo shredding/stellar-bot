@@ -94,22 +94,7 @@ describe('models / account', async () => {
       assert.equal(otherAccount.uniqueId, 'bar')
       assert.equal(otherAccount.balance, '5.0000000')
     })
-
-    // it('should call "new account" callback, passing in unique ID, if-and-only-if a new account was created', async () => {
-    //
-    //   let callback = sinon.spy(function(){})
-    //
-    //   const uniqueID = 'newUserUniqueId'
-    //
-    //   const oldAccount = await Model.getOrCreate('testing', 'foo', null, callback)
-    //
-    //   const newAccount= await Model.getOrCreate('testing', uniqueID, {
-    //     balance: '5.0000000'
-    //   }, callback)
-    //
-    //   assert.equal(true, callback.calledWith(uniqueID))
-    //   assert.equal(true, callback.calledOnce)
-    // })
+    
   })
 
   describe('canPay', () => {
@@ -120,27 +105,6 @@ describe('models / account', async () => {
 
     it ('should return false if balance is lte', () => {
       assert.ok(!account.canPay('2'))
-    })
-  })
-
-  describe('userExists', () => {
-    it ("should return false if a user with that uniqueID doesn't exist", async () => {
-      let unusedID = "123456"
-      let modelExists = await Model.userExists('testing', unusedID)
-      assert.equal(modelExists, false, "Account with id 123456 should not exist")
-    })
-
-    it ("should return true if a user with that uniqueID does exist", async () => {
-      let usedId = "foo"
-      let modelExists = await Model.userExists('testing', usedId)
-      assert.equal(modelExists, true, "Account with id foo should exist")
-    })
-
-    it ("should return false if a user with that uniqueID does exist for a different adapter", async () => {
-      let usedId = "foo"
-      let differentAdapter = "somethingElse"
-      let modelExists = await Model.userExists(differentAdapter, usedId)
-      assert.equal(modelExists, false, "Account with id foo should not exist on new adapter")
     })
   })
 })
