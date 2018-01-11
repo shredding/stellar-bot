@@ -12,8 +12,10 @@ async function bootstrap () {
 
   let config = { models, stellar }
 
+  // Add adapters to this array in order to support multiple platforms
   const adapters = [
-    new Slack(config)
+  	new Reddit(config)
+    // new Slack(config)
   ]
 
   console.log("Alive and kickin'!")
