@@ -1,5 +1,7 @@
 const orm = require('orm')
 const Big = require('big.js')
+const StellarSdk = require('stellar-sdk')
+const Promise = require('../../node_modules/bluebird')
 
 module.exports = (db) => {
 
@@ -16,7 +18,8 @@ module.exports = (db) => {
       uniqueId: String,
       createdAt: String,
       updatedAt: String,
-      balance: String
+      balance: String,
+      walletAddress: String // THIS IS A PUBLIC KEY, NOT THE SECRET KEY. DO NOT STORE USERS' SECRET KEYS EVER
     }, {
 
     methods: {
@@ -168,12 +171,29 @@ module.exports = (db) => {
             address: to
           })
         })
+      },
+
+      setWalletAddress: async function (newAddress) {
+        this.walletAddress = newAddress
+        await this.saveAsync().catch(e => {
+          console.error(`Error while setting public wallet address of Account object:\nNewAddress: ${newAddress}\nlException:${JSON.stringify(e)}`)
+          return Promise.reject(e)
+        })
       }
     },
 
     hooks: {
       beforeSave: function () {
         const now = new Date()
+
+        // If our walletAddress is set, we need to make sure it's a valid wallet address before saving
+        if(typeof this.walletAddress !== 'undefined' && this.walletAddress !== null) {
+          if(!StellarSdk.StrKey.isValidEd25519PublicKey(this.walletAddress)) {
+            this.walletAddress = null
+            return Promise.reject(new Error('BAD_PUBLIC_WALLET_ADDRESS'))
+          }
+        }
+
         if (!this.createdAt) {
           this.createdAt = now.toISOString()
         }
@@ -186,7 +206,8 @@ module.exports = (db) => {
 
     validations : {
       adapter : orm.enforce.required('adapter is required'),
-      uniqueId : orm.enforce.required('uniqueId is required')
+      uniqueId : orm.enforce.required('uniqueId is required'),
+      walletAddress : orm.enforce.unique(`Can't register the same wallet for two different users`),
     }
   })
 
@@ -208,6 +229,17 @@ module.exports = (db) => {
         a = await Account.createAsync(doc)
       }
       return a
+    })
+  }
+
+  Account.walletAddressForUser = async function (adapter, uniqueId) {
+    return await Account.withinTransaction(async () => {
+      let a = await Account.oneAsync({ adapter, uniqueId })
+      if (a && a.walletAddress && StellarSdk.StrKey.isValidEd25519PublicKey(a.walletAddress)) {
+        return a.walletAddress
+      } else {
+        return null
+      }
     })
   }
 

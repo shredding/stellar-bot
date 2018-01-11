@@ -40,6 +40,18 @@ describe('adapter', async () => {
   })
 
   describe('receiveWithdrawalRequest', () => {
+
+    it (`should throw an error if no address is given and the account doesn't have an address on file in the db`, (done) => {
+      adapter.receiveWithdrawalRequest({
+          adapter: 'testing',
+          amount: '666',
+          uniqueId: 'foo',
+          hash: 'bar'
+        }).catch ((e) => {
+          done()
+        })
+    })
+
     it ('should call withdrawalInvalidAddress if invalid address is given', (done) => {
       adapter.on('withdrawalInvalidAddress', () => done())
       adapter.receiveWithdrawalRequest({
@@ -344,6 +356,26 @@ describe('adapter', async () => {
         })
         adapter.receivePotentialTip(tip)
       })
+    })
+  })
+
+  describe('setAccountOptions', () => {
+    it ('should return an object containing the publc wallet address if the address is valid', () => {
+      let desiredWalletAddress = "GDTWLOWE34LFHN4Z3LCF2EGAMWK6IHVAFO65YYRX5TMTER4MHUJIWQKB"
+      let optionsObj = { walletAddress : desiredWalletAddress }
+      let filteredOptions = adapter.setAccountOptions(optionsObj)
+      assert.equal(filteredOptions.walletAddress, desiredWalletAddress, "Wallet address should be the same as it was when it came in")
+    })
+
+    it ('should throw an error if you provide an invalid wallet address', (done) => {
+      let desiredWalletAddress = "badaddress"
+      let optionsObj = { walletAddress : desiredWalletAddress }
+
+      try {
+        let filteredOptions = adapter.setAccountOptions(optionsObj)
+      } catch (e) {
+        done()
+      }
     })
   })
 })

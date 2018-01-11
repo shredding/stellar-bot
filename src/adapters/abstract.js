@@ -2,6 +2,7 @@ const utils = require('../utils')
 const Big = require('big.js')
 const StellarSdk = require('stellar-sdk')
 const EventEmitter = require('events')
+const Promise = require('../../node_modules/bluebird')
 
 class Adapter extends EventEmitter {
 
@@ -139,7 +140,7 @@ class Adapter extends EventEmitter {
    * {
    *     adapter: 'reddit',
    *     uniqueId: 'the-dark-coder'
-   *     address: 'aStellarAddress',
+   *     address?: 'aStellarAddress', // optional
    *     amount: '12.12'
    *     hash: 'aUniqueHash'
    * }
@@ -149,7 +150,10 @@ class Adapter extends EventEmitter {
     const adapter = withdrawalRequest.adapter
     const uniqueId = withdrawalRequest.uniqueId
     const hash = withdrawalRequest.hash
-    const address = withdrawalRequest.address
+    const address = withdrawalRequest.address || await this.Account.walletAddressForUser(adapter, uniqueId)
+    if(typeof address === 'undefined' || address === null) {
+      return Promise.reject(new Error(`Tried to make a withdrawal request with no valid address in args or attached to user\nRequest: ${JSON.stringify(withdrawalRequest)}`))
+    }
     const fixedAmount = withdrawalAmount.toFixed(7)
 
     if (!StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
@@ -177,6 +181,30 @@ class Adapter extends EventEmitter {
         return this.onWithdrawalSubmissionFailed(uniqueId, address, fixedAmount, hash)
       }
     }
+  }
+
+  /**
+   * Validates the options provided and gives back an objet wher the key is the request option
+   * and the value is the value which will be set on an account.
+   *
+   * Feel free to do any validation you like. Just be sure to handle errors / rejections to your liking.
+   *
+   * Technically 'options' can look like anything you want, but right now we only support changing wallet address.
+   *
+   * {
+   *     walletAddress: 'GDTWLOWE34LFHN4Z3LCF2EGAMWK6IHVAFO65YYRX5TMTER4MHUJIWQKB',
+   * }
+   *
+   */
+    setAccountOptions(options) {
+      let walletAddr = options.walletAddress
+      if(!StellarSdk.StrKey.isValidEd25519PublicKey(walletAddr)) {
+        throw new Error("setAccountOptions was given a bad public key")
+      }
+      // We could just return `options` here, but in the interest
+      // of future proofing / illustrating what we're more likely to do later as
+      // options are added...
+      return {walletAddress : walletAddr}
   }
 }
 

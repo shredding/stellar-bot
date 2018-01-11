@@ -54,7 +54,7 @@ function formatMessage(txt) {
 
 class Reddit extends Adapter {
 
-  async onDeposit (sourceAccount, amount) {
+  async sendDepositConfirmation (sourceAccount, amount) {
     await callReddit('composeMessage', {
       to: sourceAccount.uniqueId,
       subject: 'XLM Deposit',
