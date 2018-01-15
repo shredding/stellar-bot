@@ -17,59 +17,59 @@ module.exports = async function (models) {
     StellarSdk.Network.useTestNetwork()
   }
 
-  // latestTx = await Transaction.latest()
+  latestTx = await Transaction.latest()
 
-  // if (latestTx) {
-  //   callBuilder.cursor(latestTx.cursor)
-  // }
+  if (latestTx) {
+    callBuilder.cursor(latestTx.cursor)
+  }
 
-  // callBuilder.stream({
-  //   onmessage: (record) => {
-  //     record.transaction()
-  //       .then(async function(txn) {
-  //         // If this isn't a payment to the account address, skip
-  //         if (record.to != publicKey) {
-  //           return;
-  //         }
-  //         if (record.asset_type != 'native') {
-  //            // If you are a XLM exchange and the customer sends
-  //            // you a non-native asset, some options for handling it are
-  //            // 1. Trade the asset to native and credit that amount
-  //            // 2. Send it back to the customer
+  callBuilder.stream({
+    onmessage: (record) => {
+      record.transaction()
+        .then(async function(txn) {
+          // If this isn't a payment to the account address, skip
+          if (record.to != publicKey) {
+            return;
+          }
+          if (record.asset_type != 'native') {
+             // If you are a XLM exchange and the customer sends
+             // you a non-native asset, some options for handling it are
+             // 1. Trade the asset to native and credit that amount
+             // 2. Send it back to the customer
 
-  //            // We haven't implemented that yet! fairx.io to come!
-  //            console.log('Trying to send non-XLM credit.')
-  //            events.emit('NOT_NATIVE_ASSET_RECEIVED', record)
-  //            return;
-  //         }
-  //         try {
-  //           const txInstance = await Transaction.createAsync({
-  //             memoId: txn.memo,
-  //             amount: record.amount,
-  //             createdAt: new Date(record.created_at),
-  //             asset: record.asset_type,
-  //             cursor: record.paging_token,
-  //             source: record.from,
-  //             target: record.to,
-  //             hash: record.transaction_hash,
-  //             type: 'deposit'
-  //           })
+             // We haven't implemented that yet! fairx.io to come!
+             console.log('Trying to send non-XLM credit.')
+             events.emit('NOT_NATIVE_ASSET_RECEIVED', record)
+             return;
+          }
+          try {
+            const txInstance = await Transaction.createAsync({
+              memoId: txn.memo,
+              amount: record.amount,
+              createdAt: new Date(record.created_at),
+              asset: record.asset_type,
+              cursor: record.paging_token,
+              source: record.from,
+              target: record.to,
+              hash: record.transaction_hash,
+              type: 'deposit'
+            })
 
-  //           console.log(`Incoming txn: ${txInstance.amount}`)
-  //           events.emit('INCOMING_TRANSACTION', txInstance)
-  //         } catch (exc) {
-  //           console.log('Unable to commit transaction.')
-  //           console.log(exc)
-  //           events.emit('UNABLE_TO_COMMIT_TRANSACTION', exc)
-  //         }
-  //       })
-  //       .catch(function(exc) {
-  //         console.log('Unable to process a record.')
-  //         console.log(exc)
-  //         events.emit('UNABLE_TO_PROCESS_RECORD', exc)
-  //       })
-  //   }
-  // })
+            console.log(`Incoming txn: ${txInstance.amount}`)
+            events.emit('INCOMING_TRANSACTION', txInstance)
+          } catch (exc) {
+            console.log('Unable to commit transaction.')
+            console.log(exc)
+            events.emit('UNABLE_TO_COMMIT_TRANSACTION', exc)
+          }
+        })
+        .catch(function(exc) {
+          console.log('Unable to process a record.')
+          console.log(exc)
+          events.emit('UNABLE_TO_PROCESS_RECORD', exc)
+        })
+    }
+  })
 
   return {
     address: publicKey,
