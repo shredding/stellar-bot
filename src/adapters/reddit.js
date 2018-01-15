@@ -198,7 +198,7 @@ class Reddit extends Adapter {
 
     lastBatch = comments
 
-    await utils.sleep(60 / (60 / this.subreddits.length))
+    await utils.sleep((60 / (60 / this.subreddits.length)) * 1000)
     this.pollComments(subreddit, lastBatch)
   }
 
