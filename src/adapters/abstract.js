@@ -112,6 +112,7 @@ class Adapter extends EventEmitter {
         })
         .catch((exc) => {
           if (exc !== 'DUPLICATE_TRANSFER') {
+            console.log(exc)
             this.onTipTransferFailed(tip, payment.toFixed(7))
           }
         })

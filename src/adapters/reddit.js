@@ -91,7 +91,6 @@ class Reddit extends Adapter {
 
   async onTip (tip, amount) {
     console.log(`${amount} tip from ${tip.sourceId} to ${tip.targetId}.`)
-    console.log(tip.original)
     await callReddit('reply', formatMessage(`You tipped **${amount} XLM** to *${tip.targetId}*.`), tip.original)
     callReddit('composeMessage', {
       to: tip.sourceId,
