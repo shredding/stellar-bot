@@ -118,6 +118,7 @@ module.exports = async function (models) {
             }
           throw 'WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST'
         }
+        throw e
       }
 
       // If there was no error, load up-to-date information on your account.
