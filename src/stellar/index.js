@@ -108,11 +108,8 @@ module.exports = async function (models) {
                   destination: to,
                   startingBalance: amount
                 }))
-                // A memo allows you to add your own metadata to a transaction. It's
-                // optional and does not affect how Stellar treats the transaction.
                 .addMemo(StellarSdk.Memo.text('XLM Tipping bot'))
                 .build()
-              // Sign the transaction to prove you are actually the person sending it.
               transaction.sign(keyPair)
               return transaction
             }
