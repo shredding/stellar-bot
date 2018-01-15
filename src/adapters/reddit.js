@@ -157,20 +157,24 @@ class Reddit extends Adapter {
 
     this.name = 'reddit'
 
-    this.pollComments()
+    this.subreddits = process.env.REDDIT_SUBREDDITS.split(',')
+
     this.pollMessages()
+    for (let sub of this.subreddits) {
+      this.pollComments(sub)
+    }
   }
 
   /**
    * Polls comments in the registered subreddits every 2 secs.
    */
-  async pollComments (lastBatch) {
+  async pollComments (subreddit, lastBatch) {
     lastBatch = lastBatch || []
 
-    const comments = await callReddit('getNewComments', 'Stellar')
+    const comments = await callReddit('getNewComments', subreddit)
 
     if (comments === undefined) {
-      return this.pollComments(lastBatch)
+      return this.pollComments(subreddit, lastBatch)
     }
 
     comments.filter((comment) => {
@@ -193,8 +197,9 @@ class Reddit extends Adapter {
     })
 
     lastBatch = comments
-    await utils.sleep(2000)
-    this.pollComments(lastBatch)
+
+    await utils.sleep(60 / (60 / this.subreddits.length))
+    this.pollComments(subreddit, lastBatch)
   }
 
   /**

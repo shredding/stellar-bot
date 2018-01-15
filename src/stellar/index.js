@@ -1,5 +1,6 @@
 const StellarSdk = require('stellar-sdk')
 const EventEmitter = require('events')
+const Big = require('big.js')
 
 module.exports = async function (models) {
   const server = new StellarSdk.Server(process.env.STELLAR_HORIZON)
@@ -82,64 +83,72 @@ module.exports = async function (models) {
      * hash should just be something unique - we use the msg id from reddit,
      * but a uuid4 or sth like that would work as well.
      */
-    createTransaction: function (to, amount, hash) {
+    createTransaction: async function (to, amount, hash) {
       let data = {to, amount, hash}
-      return new Promise(function (resolve, reject) {
-        // Do not deposit to self, it wouldn't make sense
-        if (to === publicKey) {
-          data = 'WITHDRAWAL_REFERENCE_ERROR'
-          return reject(data)
+
+      // Do not deposit to self, it wouldn't make sense
+      if (to === publicKey) {
+        throw 'WITHDRAWAL_REFERENCE_ERROR'
+      }
+
+      // First, check to make sure that the destination account exists.
+      // You could skip this, but if the account does not exist, you will be charged
+      // the transaction fee when the transaction fails.
+      try {
+        await server.loadAccount(to)
+      } catch (e) {
+        if (e instanceof StellarSdk.NotFoundError) {
+            const amountNumber = new Big(amount)
+
+            // Account needs to be created
+            if (amountNumber.gte(1)) {
+              const sourceAccount = await server.loadAccount(publicKey)
+              const transaction = new StellarSdk.TransactionBuilder(sourceAccount)
+                .addOperation(StellarSdk.Operation.createAccount({
+                  destination: to,
+                  startingBalance: amount
+                }))
+                // A memo allows you to add your own metadata to a transaction. It's
+                // optional and does not affect how Stellar treats the transaction.
+                .addMemo(StellarSdk.Memo.text('XLM Tipping bot'))
+                .build()
+              // Sign the transaction to prove you are actually the person sending it.
+              transaction.sign(keyPair)
+              return transaction
+            }
+          throw 'WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST'
         }
+        throw e
+      }
 
-        // First, check to make sure that the destination account exists.
-        // You could skip this, but if the account does not exist, you will be charged
-        // the transaction fee when the transaction fails.
-        server.loadAccount(to)
-          // If the account is not found, surface a nicer error message for logging.
-          .catch(StellarSdk.NotFoundError, function (error) {
-            data = 'WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST'
-            return reject(data)
-          })
-          // If there was no error, load up-to-date information on your account.
-          .then(function() {
-            return server.loadAccount(publicKey);
-          })
-          .then(async function(sourceAccount) {
-            // Start building the transaction.
-            var transaction = new StellarSdk.TransactionBuilder(sourceAccount)
-              .addOperation(StellarSdk.Operation.payment({
-                destination: to,
-                // Because Stellar allows transaction in many currencies, you must
-                // specify the asset type. The special "native" asset represents Lumens.
-                asset: StellarSdk.Asset.native(),
-                amount: amount
-              }))
-              // A memo allows you to add your own metadata to a transaction. It's
-              // optional and does not affect how Stellar treats the transaction.
-              .addMemo(StellarSdk.Memo.text('XLM Tipping bot'))
-              .build()
-            // Sign the transaction to prove you are actually the person sending it.
-            transaction.sign(keyPair)
+      // If there was no error, load up-to-date information on your account.
+      const sourceAccount = await server.loadAccount(publicKey)
 
-            resolve(transaction)
-          })
-      })
+      const transaction = new StellarSdk.TransactionBuilder(sourceAccount)
+        .addOperation(StellarSdk.Operation.payment({
+          destination: to,
+          // Because Stellar allows transaction in many currencies, you must
+          // specify the asset type. The special "native" asset represents Lumens.
+          asset: StellarSdk.Asset.native(),
+          amount: amount
+        }))
+        .addMemo(StellarSdk.Memo.text('XLM Tipping bot'))
+        .build()
+      transaction.sign(keyPair)
+      return transaction
     },
 
     /**
      * Send a transaction into the horizon network
      */
     send: async function (tx) {
-      return new Promise(async (resolve, reject) => {
-        try {
-          await server.submitTransaction(tx)
-          resolve()
-        } catch (exc) {
-          console.log('WITHDRAWAL_SUBMISSION_FAILED')
-          console.log(exc)
-          reject('WITHDRAWAL_SUBMISSION_FAILED')
-        }
-      })
+      try {
+        await server.submitTransaction(tx)
+      } catch (exc) {
+        console.log('WITHDRAWAL_SUBMISSION_FAILED')
+        console.log(exc)
+        throw 'WITHDRAWAL_SUBMISSION_FAILED'
+      }
     }
   }
 }
