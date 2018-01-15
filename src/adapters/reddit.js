@@ -160,9 +160,8 @@ class Reddit extends Adapter {
     this.subreddits = process.env.REDDIT_SUBREDDITS.split(',')
 
     this.pollMessages()
-    for (sub of this.subreddits) {
+    for (let sub of this.subreddits) {
       this.pollComments(sub)
-      await utils.sleep(1000)
     }
   }
 
