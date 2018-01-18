@@ -2,6 +2,12 @@
 
 The stellar tip bot is there to thank people for help, be friendly, buy someone a coffee and spread the word about the amazing stellar network.
 
+## Use
+
+The stellar bot is currently live and actively used on reddit. [Here](https://www.lumenauts.com/tutorials/how-to-tip-with-the-stellar-subreddit-tipping-bot) is a tutorial on how to use it.
+
+We are actively working on twitter and slack integrations and it's easy to add your own integrations on top of it.
+
 ## Setup
 
 Check out the repo and install dependencies:
