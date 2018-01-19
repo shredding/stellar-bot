@@ -16,10 +16,22 @@ module.exports = (db) => {
       uniqueId: String,
       createdAt: String,
       updatedAt: String,
-      balance: String
+      balance: String,
+      memoId: String
     }, {
 
     methods: {
+
+      /**
+       * Updates the memoId
+       */
+      refreshMemoId: async function () {
+        const newMemoId = [1,2,3,4,5].map(() => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1)).join('-')
+        this.memoId = newMemoId
+        await this.saveAsync()
+        return newMemoId
+      },
+
       /**
        * Checks if the account has sufficient balance.
        */
@@ -180,13 +192,20 @@ module.exports = (db) => {
         if (!this.balance) {
           this.balance = '0.0000000'
         }
+        if (!this.memoId) {
+          this.memoId = `${this.adapter}/${this.uniqueId}`
+        }
+
+        // memoId should be only lowercase
+        this.memoId = this.memoId.toLowerCase()
         this.updatedAt = now.toISOString()
       }
     },
 
     validations : {
       adapter : orm.enforce.required('adapter is required'),
-      uniqueId : orm.enforce.required('uniqueId is required')
+      uniqueId : orm.enforce.required('uniqueId is required'),
+      memoId: [orm.enforce.unique('memoId already exists.'), orm.enforce.required()]
     }
   })
 
@@ -209,6 +228,11 @@ module.exports = (db) => {
       }
       return a
     })
+  }
+
+  Account.findByMemoId = async function (memoId) {
+    memoId = memoId.toLowerCase()
+    return await Account.oneAsync({ memoId })
   }
 
   return Account

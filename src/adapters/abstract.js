@@ -77,6 +77,29 @@ class Adapter extends EventEmitter {
   }
 
   /**
+   *  Options is an object with the option as key and a value.
+   *
+   *  Possible options are:
+   *
+   *  refreshMemoId: true => creates a brand new memo id.
+   *
+   *  Returns an object with the key and the new value:
+   *
+   *  refreshMemoId: '05b3-2ec4-ff90-7a27-41d1'
+   *
+   */
+  async setAccountOptions (adapter, uniqueId, options) {
+    const account = await this.Account.getOrCreate(adapter, uniqueId)
+
+    let updatedOptions = {}
+    if (options.refreshMemoId) {
+      updatedOptions.refreshMemoId = await account.refreshMemoId()
+    }
+
+    return updatedOptions
+  }
+
+  /**
    *  Should receive a tip object like:
    *
    *  {
@@ -123,11 +146,9 @@ class Adapter extends EventEmitter {
    *
    * A fresh account with an initial balance of zero is created if it does not exist.
    */
-  requestBalance (adapter, uniqueId) {
-    return new Promise(async (resolve, reject) => {
-      const target = await this.Account.getOrCreate(adapter, uniqueId)
-      resolve(target.balance)
-    })
+  async requestBalance (adapter, uniqueId) {
+    const target = await this.Account.getOrCreate(adapter, uniqueId)
+    return target.balance
   }
 
   /**

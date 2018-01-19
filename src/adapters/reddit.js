@@ -246,6 +246,16 @@ class Reddit extends Adapter {
               })
             }
           }
+
+          if (m.subject === 'memoId') {
+            const options = await this.setAccountOptions(this.name, m.author.name, {refreshMemoId: true})
+            const newMemoId = options.refreshMemoId
+            await callReddit('composeMessage', {
+              to: m.author.name,
+              subject: 'memoId refreshed',
+              text: formatMessage(`Your new memoId is **${memoId}**. Please use it for subsequent deposits.`)
+            })
+          }
           await callReddit('markMessagesAsRead', [m])
       })
 

@@ -11,6 +11,21 @@ describe('adapter', async () => {
     adapter = new Adapter(config)
   })
 
+  describe ('setAccountOptions', () => {
+
+    it ('should refresh the memoId', async () => {
+      const account = await adapter.Account.getOrCreate('testing', 'foo')
+      assert.equal(account.memoId, 'testing/foo')
+      const options = await adapter.setAccountOptions('testing', 'foo', {
+        refreshMemoId: true
+      })
+
+      const accountRefresh = await adapter.Account.getOrCreate('testing', 'foo')
+      assert(options.refreshMemoId.match(/[\dabcdef]{4}-[\dabcdef]{4}-[\dabcdef]{4}-[\dabcdef]{4}-[\dabcdef]{4}/))
+      assert(accountRefresh.memoId.match(/[\dabcdef]{4}-[\dabcdef]{4}-[\dabcdef]{4}-[\dabcdef]{4}-[\dabcdef]{4}/))
+    })
+  })
+
   describe('deposit', () => {
     it ('should call onDeposit when the adapter is correct', (done) => {
       const Account = adapter.config.models.account
