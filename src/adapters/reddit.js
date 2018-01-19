@@ -210,7 +210,7 @@ class Reddit extends Adapter {
     let processedMessages = []
 
     await messages
-      .filter(m => ['Withdraw', 'Balance'].indexOf(m.subject) > -1 && !m.was_comment)
+      .filter(m => ['Withdraw', 'Balance', 'memoId'].indexOf(m.subject) > -1 && !m.was_comment)
       .forEach(async (m) => {
         // Check the balance of the user
         if (m.subject === 'Balance') {
