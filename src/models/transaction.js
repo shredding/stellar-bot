@@ -38,12 +38,8 @@ module.exports = (db) => {
           const Account = db.models.account
 
           if (this.memoId) {
-            const accountParts = this.memoId.replace(/\s/g, '').split('/')
-            if (accountParts.length === 2) {
-              const adapter = accountParts[0]
-              const uniqueId = accountParts[1]
-
-              account = await Account.getOrCreate(adapter, uniqueId)
+            account = await Account.findByMemoId(this.memoId)
+            if (account) {
               try {
                 await account.deposit(this)
               } catch (exc) {
@@ -51,7 +47,6 @@ module.exports = (db) => {
                   throw exc
                 }
               }
-
             }
           }
         }

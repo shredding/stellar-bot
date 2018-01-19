@@ -21,6 +21,13 @@ describe('models / account', async () => {
     })
   })
 
+  describe ('initial', () => {
+    it ('should set memoId if not given', async () => {
+      const account = await Account.getOrCreate('no', 'memoId')
+      assert.equal(account.memoId, 'no/memoid')
+    })
+  })
+
   describe('deposit', () => {
     it ('should deposit on the account and create action', async () => {
       const tx = await Transaction.createAsync({

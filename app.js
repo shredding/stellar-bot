@@ -12,7 +12,7 @@ async function bootstrap () {
   let config = { models, stellar }
 
   const adapters = [
-    new Reddit(config)
+    // new Reddit(config)
   ]
 
   console.log("Alive and kickin'!")

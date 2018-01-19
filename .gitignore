@@ -3,3 +3,7 @@
 node_modules
 backups
 dev.js
+
+stellar.sublime-project
+stellar.sublime-workspace
+
