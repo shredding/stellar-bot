@@ -40,16 +40,19 @@ module.exports = (db) => {
           if (this.memoId) {
             const memo = this.memoId.toLowerCase()
 
-            // we need to ensure that the account exists ...
-            const split = memo.split('/')
-            if (split.length === 2) {
-              await Account.getOrCreate(split[0], split[1])
+            let acc = await Account.findByMemoId(memo)
+
+            if (!acc) {
+              // we need to ensure that the account exists ...
+              const split = memo.split('/')
+              if (split.length === 2) {
+                acc = await Account.getOrCreate(split[0], split[1])
+              }
             }
 
-            account = await Account.findByMemoId(memo)
-            if (account) {
+            if (acc) {
               try {
-                await account.deposit(this)
+                await acc.deposit(this)
               } catch (exc) {
                 if (exc !== 'DUPLICATE_DEPOSIT') {
                   throw exc
