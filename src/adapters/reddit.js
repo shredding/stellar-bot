@@ -254,7 +254,7 @@ class Reddit extends Adapter {
           await callReddit('composeMessage', {
             to: m.author.name,
             subject: 'memoId refreshed',
-            text: formatMessage(`Your new memoId is **${memoId}**. Please use it for subsequent deposits.`)
+            text: formatMessage(`Your new memoId is **${newMemoId}**. Please use it for subsequent deposits.`)
           })
         }
 
