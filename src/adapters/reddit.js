@@ -235,28 +235,30 @@ class Reddit extends Adapter {
               text: formatMessage(`I could not withdraw. Please make sure that the first line of the body is withdrawal amount and the second line your public key.`)
             })
           } else {
-              console.log(`XLM withdrawal initiated for ${m.author.name}.`)
-              await callReddit('markMessagesAsRead', [m])
-              this.receiveWithdrawalRequest({
-                adapter: this.name,
-                uniqueId: m.author.name,
-                amount: extract.amount,
-                address: extract.address,
-                hash: m.id
-              })
-            }
-          }
-
-          if (m.subject === 'memoId') {
-            const options = await this.setAccountOptions(this.name, m.author.name, {refreshMemoId: true})
-            const newMemoId = options.refreshMemoId
-            await callReddit('composeMessage', {
-              to: m.author.name,
-              subject: 'memoId refreshed',
-              text: formatMessage(`Your new memoId is **${memoId}**. Please use it for subsequent deposits.`)
+            console.log(`XLM withdrawal initiated for ${m.author.name}.`)
+            await callReddit('markMessagesAsRead', [m])
+            this.receiveWithdrawalRequest({
+              adapter: this.name,
+              uniqueId: m.author.name,
+              amount: extract.amount,
+              address: extract.address,
+              hash: m.id
             })
           }
-          await callReddit('markMessagesAsRead', [m])
+        }
+
+        if (m.subject === 'memoId') {
+          console.log(`memoId refreshed for ${m.author.name}.`)
+          const options = await this.setAccountOptions(this.name, m.author.name, {refreshMemoId: true})
+          const newMemoId = options.refreshMemoId
+          await callReddit('composeMessage', {
+            to: m.author.name,
+            subject: 'memoId refreshed',
+            text: formatMessage(`Your new memoId is **${memoId}**. Please use it for subsequent deposits.`)
+          })
+        }
+
+        await callReddit('markMessagesAsRead', [m])
       })
 
     await utils.sleep(2000)
