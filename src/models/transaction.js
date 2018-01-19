@@ -38,7 +38,15 @@ module.exports = (db) => {
           const Account = db.models.account
 
           if (this.memoId) {
-            account = await Account.findByMemoId(this.memoId)
+            const memo = this.memoId.toLowerCase()
+
+            // we need to ensure that the account exists ...
+            const split = memo.split('/')
+            if (split.length === 2) {
+              await Account.getOrCreate(split[0], split[1])
+            }
+
+            account = await Account.findByMemoId(memo)
             if (account) {
               try {
                 await account.deposit(this)

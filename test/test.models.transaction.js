@@ -42,6 +42,28 @@ describe('models / transaction', async () => {
       assert.ok(txn.credited)
     })
 
+    it ('should create non existing accounts', async () => {
+      await Transaction.createAsync({
+            memoId: 'testing/foo',
+            amount: '5.0000000',
+            createdAt: new Date('2018-01-01'),
+            asset: 'native',
+            cursor: 'token',
+            source: 'source',
+            target: 'target',
+            hash: 'hash',
+            type: 'deposit'
+      })
+
+      await utils.sleep(200)
+
+      const acc = await Account.oneAsync({ adapter: 'testing', uniqueId: 'foo'})
+      assert.equal('5.0000000', acc.balance)
+
+      const txn = await Transaction.oneAsync({ hash: 'hash' })
+      assert.ok(txn.credited)
+    })
+
     it ('should deposit on refreshed memo ids', async () => {
       let account = await Account.createAsync({
         adapter: 'testing',
