@@ -63,7 +63,6 @@ class Reddit extends Adapter {
   }
 
   async onTipWithInsufficientBalance (tip, amount) {
-    console.log(`${tip.sourceId} tipped with insufficient balance.`)
     callReddit('composeMessage', {
       to: tip.sourceId,
       subject: 'Tipping failed',
@@ -72,7 +71,6 @@ class Reddit extends Adapter {
   }
 
   async onTipTransferFailed(tip, amount) {
-    console.log(`Tip transfer failed for ${tip.sourceId}.`)
     callReddit('composeMessage', {
       to: tip.sourceId,
       subject: 'Tipping failed',
@@ -81,7 +79,6 @@ class Reddit extends Adapter {
   }
 
   async onTipReferenceError (tip, amount) {
-    console.log(`Tip reference error for ${tip.sourceId}.`)
     callReddit('composeMessage', {
       to: tip.sourceId,
       subject: 'Tipping failed',
@@ -90,7 +87,6 @@ class Reddit extends Adapter {
   }
 
   async onTip (tip, amount) {
-    console.log(`${amount} tip from ${tip.sourceId} to ${tip.targetId}.`)
     await callReddit('reply', formatMessage(`You tipped **${amount} XLM** to *${tip.targetId}*.`), tip.original)
     callReddit('composeMessage', {
       to: tip.sourceId,
@@ -105,7 +101,6 @@ class Reddit extends Adapter {
   }
 
   async onWithdrawalReferenceError (uniqueId, address, amount, hash) {
-    console.log(`XLM withdrawal failed - unknown error for ${uniqueId}.`)
     callReddit('composeMessage', {
       to: uniqueId,
       subject: 'XLM Withdrawal failed',
@@ -114,7 +109,6 @@ class Reddit extends Adapter {
   }
 
   async onWithdrawalDestinationAccountDoesNotExist (uniqueId, address, amount, hash) {
-    console.log(`XLM withdrawal failed - no public address for ${uniqueId}.`)
     await callReddit('composeMessage', {
       to: uniqueId,
       subject: 'XLM Withdrawal failed',
@@ -123,25 +117,23 @@ class Reddit extends Adapter {
   }
 
   async onWithdrawalFailedWithInsufficientBalance (uniqueId, address, amount, hash) {
-    console.log(`XLM withdrawal failed - insufficient balance for ${uniqueId}.`)
     await callReddit('composeMessage', {
-      to: address,
+      to: uniqueId,
       subject: 'XLM Withdrawal failed',
       text: formatMessage(`I could not withdraw. You requested more than your current balance. Please adjust and try again.`)
     })
   }
 
   async onWithdrawalInvalidAddress (uniqueId, address ,amount, hash) {
-    console.log(`XLM withdrawal failed - invalid address ${address}.`)
     await callReddit('composeMessage', {
-      to: address,
+      to: uniqueId,
       subject: 'XLM Withdrawal failed',
       text: formatMessage(`I could not withdraw, because of an unknown error. Please try again. [Contact the dev team](https://github.com/shredding/stellar-bot/issues/new) if the error persists.`)
     })
   }
 
   async onWithdrawalSubmissionFailed (uniqueId, address, amount, hash) {
-    this.emit('withdrawalSubmissionFailed ', uniqueId, address, amount, hash)
+    this.onWithdrawalReferenceError(uniqueId, address, amount, hash)
   }
 
   async onWithdrawal (uniqueId, address, amount, hash) {
@@ -220,7 +212,6 @@ class Reddit extends Adapter {
             subject: 'XLM Balance',
             text: formatMessage(`Your current balance is **${balance} XLM**.`)
           })
-          console.log(`Balance request answered for ${m.author.name}.`)
           await callReddit('markMessagesAsRead', [m])
         }
 
@@ -235,7 +226,6 @@ class Reddit extends Adapter {
               text: formatMessage(`I could not withdraw. Please make sure that the first line of the body is withdrawal amount and the second line your public key.`)
             })
           } else {
-            console.log(`XLM withdrawal initiated for ${m.author.name}.`)
             await callReddit('markMessagesAsRead', [m])
             this.receiveWithdrawalRequest({
               adapter: this.name,
@@ -248,7 +238,6 @@ class Reddit extends Adapter {
         }
 
         if (m.subject === 'memoId') {
-          console.log(`memoId refreshed for ${m.author.name}.`)
           const options = await this.setAccountOptions(this.name, m.author.name, {refreshMemoId: true})
           const newMemoId = options.refreshMemoId
           await callReddit('composeMessage', {
@@ -277,7 +266,7 @@ class Reddit extends Adapter {
    * Extract withdrawal information from the message.
    */
   extractWithdrawal (body) {
-    const parts = body.slice(body.indexOf('<p>') + 3, body.indexOf('</p>')).split('\n')
+    const matches = body.match(/([\d\.]*) XLM to ([\w\d]+)/i)
 
     if (parts.length === 2) {
       const amount = parts[0].match(/([\d\.]*)/)[0]

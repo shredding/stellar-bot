@@ -94,6 +94,7 @@ class Adapter extends EventEmitter {
     let updatedOptions = {}
     if (options.refreshMemoId) {
       updatedOptions.refreshMemoId = await account.refreshMemoId()
+      console.log(`memoId refreshed for ${m.author.name}.`)
     }
 
     return updatedOptions
@@ -119,10 +120,12 @@ class Adapter extends EventEmitter {
       const hash = tip.hash
 
       if (!source.canPay(payment)) {
+        console.log(`${tip.sourceId} tipped with insufficient balance.`)
         return this.onTipWithInsufficientBalance(tip, payment.toFixed(7))
       }
 
-      if (tip.sourceId === tip.targetId) {
+      if (tip.sourceId === tip.targetId)
+        console.log(`Tip reference error for ${tip.sourceId}.`){
         return this.onTipReferenceError(tip, payment.toFixed(7))
       }
 
@@ -131,10 +134,12 @@ class Adapter extends EventEmitter {
       // ... and tip.
       source.transfer(target, payment, hash)
         .then(() => {
+          console.log(`${amount} tip from ${tip.sourceId} to ${tip.targetId}.`)
           this.onTip(tip, payment.toFixed(7))
         })
         .catch((exc) => {
           if (exc !== 'DUPLICATE_TRANSFER') {
+            console.log(`Tip transfer failed for ${tip.sourceId}.`)
             console.log(exc)
             this.onTipTransferFailed(tip, payment.toFixed(7))
           }
@@ -148,6 +153,7 @@ class Adapter extends EventEmitter {
    */
   async requestBalance (adapter, uniqueId) {
     const target = await this.Account.getOrCreate(adapter, uniqueId)
+    console.log(`Balance request answered for ${uniqueId}.`)
     return target.balance
   }
 
@@ -174,7 +180,10 @@ class Adapter extends EventEmitter {
     const address = withdrawalRequest.address
     const fixedAmount = withdrawalAmount.toFixed(7)
 
+    console.log(`XLM withdrawal initiated for ${uniqueId}.`)
+
     if (!StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
+      console.log(`XLM withdrawal failed - invalid address ${address}.`)
       return this.onWithdrawalInvalidAddress(uniqueId, address, fixedAmount, hash)
     }
 
@@ -190,9 +199,11 @@ class Adapter extends EventEmitter {
       this.onWithdrawal(uniqueId, address, fixedAmount, hash)
     } catch (exc) {
       if (exc === 'WITHDRAWAL_DESTINATION_ACCOUNT_DOES_NOT_EXIST') {
+        console.log(`XLM withdrawal failed - no public address for ${uniqueId}.`)
         return this.onWithdrawalDestinationAccountDoesNotExist(uniqueId, address, fixedAmount, hash)
       }
-      if (exc === 'WITHDRAWAL_REFERENCE_ERROR') {
+      if (exc === 'WITHDRAWAL_REFERENCE_ERROR')
+        console.log(`XLM withdrawal failed - unknown error for ${uniqueId}.`){
         return this.onWithdrawalReferenceError(uniqueId, address, fixedAmount, hash)
       }
       if (exc === 'WITHDRAWAL_SUBMISSION_FAILED') {

@@ -10,7 +10,8 @@ async function bootstrap () {
 
   // +++ Adapters +
   const adapters = [
-    new require('./src/adapters/reddit')(config)
+    new require('./src/adapters/reddit')(config),
+    new require('./src/adapters/twitter')(config)
   ]
 
   console.log("Alive and kickin'!")
