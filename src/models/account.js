@@ -214,6 +214,7 @@ module.exports = (db) => {
    * doc if optional (adapter and uniqueId are taken if not given)
    */
   Account.getOrCreate = async function (adapter, uniqueId, doc) {
+    uniqueId = uniqueId.toLowerCase()
     return await Account.withinTransaction(async () => {
       let a = await Account.oneAsync({ adapter, uniqueId })
       if (!a) {
