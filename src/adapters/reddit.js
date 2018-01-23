@@ -266,7 +266,7 @@ class Reddit extends Adapter {
    * Extract withdrawal information from the message.
    */
   extractWithdrawal (body) {
-    const matches = body.match(/([\d\.]*) XLM to ([\w\d]+)/i)
+    const parts = body.slice(body.indexOf('<p>') + 3, body.indexOf('</p>')).split('\n')
 
     if (parts.length === 2) {
       const amount = parts[0].match(/([\d\.]*)/)[0]
