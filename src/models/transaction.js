@@ -4,7 +4,9 @@ const Big = require('big.js')
 
 module.exports = (db) => {
 
-
+  /**
+   * A stellar network transaction
+   */
   const Transaction = db.define('transaction', {
       source: String,
       target: String,
@@ -18,11 +20,11 @@ module.exports = (db) => {
       credited: Boolean
     }, {
     validations : {
-      source : orm.enforce.required(),
-      target : orm.enforce.required(),
-      type : orm.enforce.required(),
-      amount : orm.enforce.required(),
-      createdAt: orm.enforce.required(),
+      source : orm.enforce.required('source is required'),
+      target : orm.enforce.required('target is required'),
+      type : orm.enforce.required('type is required'),
+      amount : orm.enforce.required('amount is required'),
+      createdAt: orm.enforce.required('createdAt is required'),
       hash: [orm.enforce.unique('Hash already exists.'), orm.enforce.required()]
     },
     hooks: {
@@ -31,18 +33,32 @@ module.exports = (db) => {
           this.credited = false
         }
       },
-      afterSave: function (success) {
+      afterSave: async function (success) {
         if (success && !this.credited && this.type === 'deposit') {
           const Account = db.models.account
-          const accountParts = this.memoId.replace(/\s/g, '').split('/')
 
-          if (accountParts.length === 2) {
-            const adapter = accountParts[0]
-            const uniqueId = accountParts[1]
+          if (this.memoId) {
+            const memo = this.memoId.toLowerCase()
 
-            account = Account.getOrCreate(adapter, uniqueId).then(async (acc) => {
-              await acc.deposit(this)
-            })
+            let acc = await Account.findByMemoId(memo)
+
+            if (!acc) {
+              // we need to ensure that the account exists ...
+              const split = memo.split('/')
+              if (split.length === 2) {
+                acc = await Account.getOrCreate(split[0], split[1])
+              }
+            }
+
+            if (acc) {
+              try {
+                await acc.deposit(this)
+              } catch (exc) {
+                if (exc !== 'DUPLICATE_DEPOSIT') {
+                  throw exc
+                }
+              }
+            }
           }
         }
       }

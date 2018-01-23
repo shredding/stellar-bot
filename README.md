@@ -2,6 +2,12 @@
 
 The stellar tip bot is there to thank people for help, be friendly, buy someone a coffee and spread the word about the amazing stellar network.
 
+## Use
+
+The stellar bot is currently live and actively used on reddit. [Here](https://www.lumenauts.com/tutorials/how-to-tip-with-the-stellar-subreddit-tipping-bot) is a tutorial on how to use it.
+
+We are actively working on twitter and slack integrations and it's easy to add your own integrations on top of it.
+
 ## Setup
 
 Check out the repo and install dependencies:
@@ -36,6 +42,7 @@ REDDIT_CLIENT_ID=YOUR_REDDIT_APP_CLIENT_ID
 REDDIT_CLIENT_SECRET=YOUR_REDDIT_APP_SECRET
 REDDIT_USER=YOUR_STELLAR_BOT
 REDDIT_PASS=YOUR_STELLAR_BOT_PASSWORD
+REDDIT_SUBREDDITS=stellar,stellartutorials
 ```
 
 Create an `.env.test`:
@@ -48,6 +55,8 @@ PG_HOST=localhost
 PG_PORT=5455
 PG_NAME=stellar_testing
 PG_PASSWORD=
+
+REDDIT_SUBREDDITS=foo,bar,baz
 ```
 
 ## Get it going
