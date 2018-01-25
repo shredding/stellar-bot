@@ -1,5 +1,7 @@
 require('dotenv').config({path: process.env.NODE_ENV ? './.env' + process.env.NODE_ENV : './.env'})
 
+const Reddit = require('./src/adapters/reddit')
+const Twitter = require('./src/adapters/twitter')
 
 async function bootstrap () {
 
@@ -8,10 +10,9 @@ async function bootstrap () {
 
   let config = { models, stellar }
 
-  // +++ Adapters +
   const adapters = [
-    new require('./src/adapters/reddit')(config),
-    new require('./src/adapters/twitter')(config)
+    // new (config),
+    new Twitter(config)
   ]
 
   console.log("Alive and kickin'!")

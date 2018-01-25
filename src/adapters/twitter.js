@@ -1,4 +1,4 @@
-const Twitter = require('twit')
+const TwitterLib = require('twit')
 const Adapter = require('./abstract')
 const utils = require('../utils')
 
@@ -106,7 +106,7 @@ class Twitter extends Adapter {
 
     this.name = 'twitter'
 
-    this.client = new Twitter({
+    this.client = new TwitterLib({
       consumer_key: process.env.TWITTER_API_KEY,
       consumer_secret: process.env.TWITTER_SECRET_KEY,
       access_token: process.env.TWITTER_ACCESS_TOKEN,
@@ -114,14 +114,14 @@ class Twitter extends Adapter {
     })
 
     // Find mentions of the @xlm_bot and filter for tips ...
-    const tweetStream = client.stream('statuses/filter', {track: '@xlm_bot'});
+    const tweetStream = this.client.stream('statuses/filter', {track: '@xlm_bot'});
     tweetStream.on('tweet', (tweet) => {
       const tipAmount = this.extractTipAmount(tweet.text)
       if (tipAmount && tweet.in_reply_to_screen_name) {
         this.receivePotentialTip({
           adapter: this.name,
           sourceId: tweet.user.name,
-          targetId: tweet.in_reply_to_screen_name
+          targetId: tweet.in_reply_to_screen_name,
           amount: tipAmount,
           original: tweet,
           hash: tweet.id
@@ -130,8 +130,8 @@ class Twitter extends Adapter {
     })
 
     // parse direct messages
-    const userStream = client.stream('user')
-    userStream.on('direct_message', (msg) => {
+    const userStream = this.client.stream('user')
+    userStream.on('direct_message', async (msg) => {
       const txt = msg.direct_message.text.toLowerCase()
       if (txt.indexOf('tell me my balance') > -1) {
 

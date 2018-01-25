@@ -124,8 +124,8 @@ class Adapter extends EventEmitter {
         return this.onTipWithInsufficientBalance(tip, payment.toFixed(7))
       }
 
-      if (tip.sourceId === tip.targetId)
-        console.log(`Tip reference error for ${tip.sourceId}.`){
+      if (tip.sourceId === tip.targetId) {
+        console.log(`Tip reference error for ${tip.sourceId}.`)
         return this.onTipReferenceError(tip, payment.toFixed(7))
       }
 
@@ -202,8 +202,8 @@ class Adapter extends EventEmitter {
         console.log(`XLM withdrawal failed - no public address for ${uniqueId}.`)
         return this.onWithdrawalDestinationAccountDoesNotExist(uniqueId, address, fixedAmount, hash)
       }
-      if (exc === 'WITHDRAWAL_REFERENCE_ERROR')
-        console.log(`XLM withdrawal failed - unknown error for ${uniqueId}.`){
+      if (exc === 'WITHDRAWAL_REFERENCE_ERROR') {
+        console.log(`XLM withdrawal failed - unknown error for ${uniqueId}.`)
         return this.onWithdrawalReferenceError(uniqueId, address, fixedAmount, hash)
       }
       if (exc === 'WITHDRAWAL_SUBMISSION_FAILED') {
