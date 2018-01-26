@@ -219,7 +219,7 @@ class Reddit extends Adapter {
           const extract = this.extractWithdrawal(m.body_html)
 
           if (!extract) {
-            console.log(`XLM withdrawal failed - unparsable message from ${m.author.name}.`)
+            utils.log(`XLM withdrawal failed - unparsable message from ${m.author.name}.`)
             await callReddit('composeMessage', {
               to: m.author.name,
               subject: 'XLM Withdrawal failed',

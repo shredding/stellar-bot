@@ -1,6 +1,7 @@
 const StellarSdk = require('stellar-sdk')
 const EventEmitter = require('events')
 const Big = require('big.js')
+const utils = require('../utils')
 
 module.exports = async function (models) {
   const server = new StellarSdk.Server(process.env.STELLAR_HORIZON)
@@ -38,7 +39,7 @@ module.exports = async function (models) {
              // 2. Send it back to the customer
 
              // We haven't implemented that yet! fairx.io to come!
-             console.log('Trying to send non-XLM credit.')
+             utils.log('Trying to send non-XLM credit.')
              events.emit('NOT_NATIVE_ASSET_RECEIVED', record)
              return;
           }
@@ -55,17 +56,17 @@ module.exports = async function (models) {
               type: 'deposit'
             })
 
-            console.log(`Incoming txn: ${txInstance.amount}`)
+            utils.log(`Incoming txn: ${txInstance.amount}`)
             events.emit('INCOMING_TRANSACTION', txInstance)
           } catch (exc) {
-            console.log('Unable to commit transaction.')
-            console.log(exc)
+            utils.log('Unable to commit transaction.')
+            utils.log(exc)
             events.emit('UNABLE_TO_COMMIT_TRANSACTION', exc)
           }
         })
         .catch(function(exc) {
-          console.log('Unable to process a record.')
-          console.log(exc)
+          utils.log('Unable to process a record.')
+          utils.log(exc)
           events.emit('UNABLE_TO_PROCESS_RECORD', exc)
         })
     }
@@ -142,8 +143,8 @@ module.exports = async function (models) {
       try {
         await server.submitTransaction(tx)
       } catch (exc) {
-        console.log('WITHDRAWAL_SUBMISSION_FAILED')
-        console.log(exc)
+        utils.log('WITHDRAWAL_SUBMISSION_FAILED')
+        utils.log(exc)
         throw 'WITHDRAWAL_SUBMISSION_FAILED'
       }
     }

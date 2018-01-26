@@ -86,7 +86,7 @@ class Twitter extends Adapter {
   async onWithdrawalInvalidAddress (uniqueId, address ,amount, hash) {
     this.client.post('direct_messages/new', {
       screen_name: uniqueId,
-      text: formatMessage(`I could not withdraw, because of an unknown error. Please try again. Contact the dev team @ https://github.com/shredding/stellar-bot/issues/new if the error persists.`)
+      text: formatMessage(`I could not withdraw, because you entered an invalid address.`)
     })
   }
 
@@ -124,7 +124,7 @@ class Twitter extends Adapter {
           targetId: tweet.in_reply_to_screen_name,
           amount: tipAmount,
           original: tweet,
-          hash: tweet.id
+          hash: tweet.id.toString()
         })
       }
     })
@@ -132,6 +132,10 @@ class Twitter extends Adapter {
     // parse direct messages
     const userStream = this.client.stream('user')
     userStream.on('direct_message', async (msg) => {
+      if (msg.direct_message.sender.screen_name === process.env.TWITTER_USER) {
+        return
+      }
+
       const txt = msg.direct_message.text.toLowerCase()
       if (txt.indexOf('tell me my balance') > -1) {
 
@@ -155,8 +159,9 @@ class Twitter extends Adapter {
       } else if (txt.indexOf('withdraw') > -1) {
 
         const extract = this.extractWithdrawal(txt)
+
         if (!extract) {
-          console.log(`XLM withdrawal failed - unparsable message from ${msg.direct_message.sender.screen_name}.`)
+          utils.log(`XLM withdrawal failed - unparsable message from ${msg.direct_message.sender.screen_name}.`)
           this.client.post('direct_messages/new', {
             screen_name: msg.direct_message.sender.screen_name,
             text: formatMessage(`I could not withdraw. Please make sure that the format matches "withdraw YOUR_AMOUNT XLM to YOUR_PUBLIC_KEY.`)
@@ -167,7 +172,7 @@ class Twitter extends Adapter {
             uniqueId: msg.direct_message.sender.screen_name,
             amount: extract.amount,
             address: extract.address,
-            hash: msg.direct_message.id
+            hash: msg.direct_message.id.toString()
           })
         }
       }
@@ -176,11 +181,10 @@ class Twitter extends Adapter {
 
   extractWithdrawal(txt) {
     const matches = txt.match(/([\d\.]*) XLM to ([\w\d]+)/i)
-
-    if (matches.length === 3) {
+    if (matches && matches.length === 3) {
       return {
         amount: matches[1],
-        address: matches[2]
+        address: matches[2].toUpperCase()
       }
     }
     return undefined
