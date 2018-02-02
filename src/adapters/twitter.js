@@ -14,7 +14,7 @@ function formatMessage(txt) {
  * Reply wrap func
  */
 function formatReply(txt) {
-  return txt
+  return txt + "\n\nHelp: bit.ly/2s5n8oi"
 }
 
 class Twitter extends Adapter {
@@ -49,8 +49,8 @@ class Twitter extends Adapter {
 
   async onTip (tip, amount) {
     this.client.post('statuses/update',{
-      status: formatReply(`You tipped ${amount} XLM to ${tip.targetId}.`),
-      in_reply_to_status_id :tweet.id
+      status: formatReply(`@${tip.original.user.screen_name} - You tipped ${amount} XLM to @${tip.targetId}.`),
+      in_reply_to_status_id: tip.original.id_str,
     })
     this.client.post('direct_messages/new', {
       screen_name: tip.sourceId,
@@ -113,21 +113,7 @@ class Twitter extends Adapter {
       access_token_secret: process.env.TWITTER_ACCESS_SECRET
     })
 
-    // Find mentions of the @xlm_bot and filter for tips ...
-    const tweetStream = this.client.stream('statuses/filter', {track: '@xlm_bot'});
-    tweetStream.on('tweet', (tweet) => {
-      const tipAmount = this.extractTipAmount(tweet.text)
-      if (tipAmount && tweet.in_reply_to_screen_name) {
-        this.receivePotentialTip({
-          adapter: this.name,
-          sourceId: tweet.user.name,
-          targetId: tweet.in_reply_to_screen_name,
-          amount: tipAmount,
-          original: tweet,
-          hash: tweet.id.toString()
-        })
-      }
-    })
+    this.getMentions()
 
     // parse direct messages
     const userStream = this.client.stream('user')
@@ -179,6 +165,48 @@ class Twitter extends Adapter {
     })
   }
 
+  async getMentions (sinceId) {
+    let params = {}
+    if (sinceId) {
+      params.since_id = sinceId
+    }
+
+    this.client.get('statuses/mentions_timeline', params).catch(async (err) => {
+      utils.log('twitter error', err.stack)
+      await utils.sleep(12000)
+      this.getMentions(sinceId)
+    })
+    .then(async (response) => {
+      const tweets = response.data
+      // on restarts we do not want to resend messages
+      // there is no problem with double spends, but with double messages ...
+      // so keep that to a min
+      const oneMinAgo = new Date()
+      oneMinAgo.setMinutes(oneMinAgo.getMinutes() - 1);
+
+      tweets.filter((tweet) => {
+        const tweetDate = new Date(tweet.created_at)
+        return tweetDate > oneMinAgo
+      }).forEach((tweet) => {
+        const tipAmount = this.extractTipAmount(tweet.text)
+        if (tipAmount && tweet.in_reply_to_screen_name) {
+          this.receivePotentialTip({
+            adapter: this.name,
+            sourceId: tweet.user.screen_name,
+            targetId: tweet.in_reply_to_screen_name,
+            amount: tipAmount,
+            original: tweet,
+            hash: tweet.id.toString()
+          })
+        }
+      })
+
+      await utils.sleep(12000)
+      sinceId = tweets.length > 0 ? tweets[0].id : sinceId
+      this.getMentions(sinceId)
+    })
+  }
+
   extractWithdrawal(txt) {
     const matches = txt.match(/([\d\.]*) XLM to ([\w\d]+)/i)
     if (matches && matches.length === 3) {
@@ -194,7 +222,7 @@ class Twitter extends Adapter {
    * All supported tipping formats ...
    */
   extractTipAmount (tipText) {
-    const matches =  tipText.match(/[\s{1}]?[\d\.]*[\s{1}]?XLM/i)
+    const matches =  tipText.match(/([\d\.]+)[\s{1}]?XLM/i)
     return matches ? matches[0].replace(/xlm/i, '').replace(/\s/g, '') : undefined
   }
 }

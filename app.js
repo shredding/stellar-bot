@@ -11,7 +11,7 @@ async function bootstrap () {
   let config = { models, stellar }
 
   const adapters = [
-    // new (config),
+    new Reddit(config),
     new Twitter(config)
   ]
 
