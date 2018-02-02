@@ -34,7 +34,7 @@ async function callReddit(func, data, client) {
   try {
     return await client[func](data)
   } catch (exc) {
-    console.error(`${exc.name} - Failed to execute ${func} with data:`, data)
+    utils.error(`${exc.name} - Failed to execute ${func} with data:`, data)
   }
 }
 

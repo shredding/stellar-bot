@@ -101,11 +101,7 @@ class Twitter extends Adapter {
     })
   }
 
-  constructor (config) {
-    super(config)
-
-    this.name = 'twitter'
-
+  connect () {
     this.client = new TwitterLib({
       consumer_key: process.env.TWITTER_API_KEY,
       consumer_secret: process.env.TWITTER_SECRET_KEY,
@@ -165,6 +161,13 @@ class Twitter extends Adapter {
     })
   }
 
+  constructor (config) {
+    super(config)
+
+    this.name = 'twitter'
+    this.connect()
+  }
+
   async getMentions (sinceId) {
     let params = {}
     if (sinceId) {
@@ -209,7 +212,7 @@ class Twitter extends Adapter {
 
   extractWithdrawal(txt) {
     const matches = txt.match(/([\d\.]*) XLM to ([\w\d]+)/i)
-    if (matches && matches.length === 3) {
+    if (matches && matches.length === 3 && matches[1] && matches[2]) {
       return {
         amount: matches[1],
         address: matches[2].toUpperCase()

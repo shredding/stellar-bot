@@ -169,7 +169,6 @@ module.exports = (db) => {
             await stellar.send(tx)
           } catch (exc) {
             this.balance = refundBalance.plus(amount).toFixed(7)
-            console.log('here')
             throw exc
           }
 
