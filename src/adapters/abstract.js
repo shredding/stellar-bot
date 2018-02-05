@@ -120,7 +120,7 @@ class Adapter extends EventEmitter {
       const hash = tip.hash
 
       if (!source.canPay(payment)) {
-        utils.log(`${tip.sourceId} tipped with insufficient balance.`)
+        utils.log(`${tip.sourceId} tipped with insufficient balance on ${tip.adapter}.`)
         return this.onTipWithInsufficientBalance(tip, payment.toFixed(7))
       }
 
