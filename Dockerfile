@@ -1,8 +1,12 @@
-FROM node:latest
+FROM node:alpine
 
-RUN apt-get upgrade -y
-RUN apt-get update
-RUN apt-get install -y build-essential libavahi-compat-libdnssd-dev git
+RUN apk add --no-cache --virtual .gyp \
+        python \
+        make \
+        g++ \
+    && npm install \
+        [ your npm dependencies here ] \
+    && apk del .gyp
 
 RUN mkdir /usr/src/app
 WORKDIR /usr/src/app
