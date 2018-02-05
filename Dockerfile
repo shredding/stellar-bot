@@ -2,7 +2,8 @@ FROM node:latest
 
 RUN apt-get upgrade -y
 RUN apt-get update
-RUN apt-get install -y build-essential
+RUN apt-get install -y build-essential libavahi-compat-libdnssd-dev git
+
 RUN mkdir /usr/src/app
 WORKDIR /usr/src/app
 
