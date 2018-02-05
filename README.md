@@ -2,11 +2,20 @@
 
 The stellar tip bot is there to thank people for help, be friendly, buy someone a coffee and spread the word about the amazing stellar network.
 
+Here are a few features we want to highlight:
+
+- *almost* instance deposit and withdrawal
+- anonymous deposits
+- easy and cross plattform tipping (reddit, twitter)
+- on-platform balance checks
+- fast free tipping
+- automatic account funding for withdrawals > 1 XLM
+
+Try it out!
+
 ## Use
 
-The stellar bot is currently live and actively used on reddit. [Here](https://www.lumenauts.com/tutorials/how-to-tip-with-the-stellar-subreddit-tipping-bot) is a tutorial on how to use it.
-
-We are actively working on twitter and slack integrations and it's easy to add your own integrations on top of it.
+You can use the stellar bot on [reddit](https://www.lumenauts.com/tutorials/how-to-tip-with-the-stellar-subreddit-tipping-bot) and [twitter](https://twitter.com/xlm_bot)!
 
 ## Setup
 
@@ -43,6 +52,13 @@ REDDIT_CLIENT_SECRET=YOUR_REDDIT_APP_SECRET
 REDDIT_USER=YOUR_STELLAR_BOT
 REDDIT_PASS=YOUR_STELLAR_BOT_PASSWORD
 REDDIT_SUBREDDITS=stellar,stellartutorials
+
+TWITTER_USER=YOUR_TWITTER_USERNAME
+TWITTER_API_KEY=YOUR_TWITTER_API_KEY
+TWITTER_SECRET_KEY=YOUR_TWITTER_SECRET_KEY
+TWITTER_ACCESS_TOKEN=YOUR_TWITTER_ACCESS_TOKEN
+TWITTER_ACCESS_SECRET=YOUR TWITTER_ACCESS_SECRET
+
 ```
 
 Create an `.env.test`:

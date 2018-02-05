@@ -134,6 +134,7 @@ module.exports = (db) => {
           if (!this.canPay(withdrawalAmount)) {
             throw new Error('Unsufficient balance. Always check with `canPay` before withdrawing money!')
           }
+
           const sourceBalance = new Big(this.balance)
           const amount = new Big(withdrawalAmount)
           this.balance = sourceBalance.minus(amount).toFixed(7)
@@ -150,6 +151,7 @@ module.exports = (db) => {
             hash: hash,
             type: 'withdrawal'
           }
+
           const txExists = await Transaction.existsAsync({
             hash: hash,
             type: 'withdrawal',
