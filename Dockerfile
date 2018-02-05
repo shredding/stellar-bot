@@ -1,12 +1,4 @@
-FROM node:alpine
-
-RUN apk add --no-cache --virtual .gyp \
-        python \
-        make \
-        g++ \
-    && npm install \
-        [ your npm dependencies here ] \
-    && apk del .gyp
+FROM node:latest
 
 RUN mkdir /usr/src/app
 WORKDIR /usr/src/app
