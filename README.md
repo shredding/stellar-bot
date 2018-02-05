@@ -2,6 +2,17 @@
 
 The stellar tip bot is there to thank people for help, be friendly, buy someone a coffee and spread the word about the amazing stellar network.
 
+Here are a few features we want to highlight:
+
+- *almost* instance deposit and withdrawal
+- anonymous deposits
+- easy and cross plattform tipping (reddit, twitter)
+- on-platform balance checks
+- fast free tipping
+- automatic account funding for withdrawals > 1 XLM
+
+Try it out!
+
 ## Use
 
 You can use the stellar bot on [reddit](https://www.lumenauts.com/tutorials/how-to-tip-with-the-stellar-subreddit-tipping-bot) and [twitter](https://twitter.com/xlm_bot)!
