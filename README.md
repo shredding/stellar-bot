@@ -4,7 +4,7 @@ The stellar tip bot is there to thank people for help, be friendly, buy someone 
 
 Here are a few features we want to highlight:
 
-- *almost* instance deposit and withdrawal
+- *almost* instance deposit and withdrawals
 - anonymous deposits
 - easy and cross plattform tipping (reddit, twitter)
 - on-platform balance checks
