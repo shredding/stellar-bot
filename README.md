@@ -17,6 +17,11 @@ Try it out!
 
 You can use the stellar bot on [reddit](https://www.lumenauts.com/tutorials/how-to-tip-with-the-stellar-subreddit-tipping-bot) and [twitter](https://twitter.com/xlm_bot)!
 
+Check:
+
+- [a community made tutorial for reddit](https://www.lumenauts.com/tutorials/how-to-tip-with-the-stellar-subreddit-tipping-bot)
+- [a community made tutorial for twitter](https://www.youtube.com/watch?v=MXZF0RY8D20&feature=youtu.be)
+
 ## Setup
 
 Check out the repo and install dependencies:
