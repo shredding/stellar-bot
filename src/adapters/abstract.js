@@ -134,7 +134,7 @@ class Adapter extends EventEmitter {
       // ... and tip.
       source.transfer(target, payment, hash)
         .then(() => {
-          utils.log(`${payment.toFixed(7)} tip from ${tip.sourceId} to ${tip.targetId}.`)
+          utils.log(`${payment.toFixed(7)} tip from ${tip.sourceId} to ${tip.targetId} on ${tip.adapter}.`)
           this.onTip(tip, payment.toFixed(7))
         })
         .catch((exc) => {
