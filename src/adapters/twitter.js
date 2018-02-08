@@ -14,7 +14,7 @@ function formatMessage(txt) {
  * Reply wrap func
  */
 function formatReply(txt) {
-  return txt + "\n\nHelp: bit.ly/2s5n8oi"
+  return txt + "\n\nAbout me & XLM: http://bit.ly/2FYfbDp"
 }
 
 class Twitter extends Adapter {

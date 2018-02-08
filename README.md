@@ -20,7 +20,7 @@ You can use the stellar bot on [reddit](https://www.lumenauts.com/tutorials/how-
 Check:
 
 - [a community made tutorial for reddit](https://www.lumenauts.com/tutorials/how-to-tip-with-the-stellar-subreddit-tipping-bot)
-- [a community made tutorial for twitter](https://www.youtube.com/watch?v=MXZF0RY8D20&feature=youtu.be)
+- [a community made tutorial for twitter](https://www.lumenauts.com/tutorials/how-to-tip-with-the-lumen-twitter-tipping-bot) and a great [twitter walk through on youtube](https://www.youtube.com/watch?v=MXZF0RY8D20&feature=youtu.be))
 
 ## Setup
 
