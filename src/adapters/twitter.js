@@ -181,31 +181,37 @@ class Twitter extends Adapter {
     })
     .then(async (response) => {
       const tweets = response.data
+
       // on restarts we do not want to resend messages
       // there is no problem with double spends, but with double messages ...
       // so keep that to a min
       const oneMinAgo = new Date()
       oneMinAgo.setMinutes(oneMinAgo.getMinutes() - 1);
 
-      tweets.filter((tweet) => {
-        const tweetDate = new Date(tweet.created_at)
-        return tweetDate > oneMinAgo
-      }).forEach((tweet) => {
-        const tipAmount = this.extractTipAmount(tweet.text)
-        if (tipAmount && tweet.in_reply_to_screen_name) {
-          this.receivePotentialTip({
-            adapter: this.name,
-            sourceId: tweet.user.screen_name,
-            targetId: tweet.in_reply_to_screen_name,
-            amount: tipAmount,
-            original: tweet,
-            hash: tweet.id.toString()
-          })
-        }
-      })
+      try {
+        tweets.filter((tweet) => {
+          const tweetDate = new Date(tweet.created_at)
+          return tweetDate > oneMinAgo
+        }).forEach((tweet) => {
+          const tipAmount = this.extractTipAmount(tweet.text)
+          if (tipAmount && tweet.in_reply_to_screen_name) {
+            this.receivePotentialTip({
+              adapter: this.name,
+              sourceId: tweet.user.screen_name,
+              targetId: tweet.in_reply_to_screen_name,
+              amount: tipAmount,
+              original: tweet,
+              hash: tweet.id.toString()
+            })
+          }
+        })
+        sinceId = tweets.length > 0 ? tweets[0].id : sinceId
+      } catch (e) {
+        // Something weird came back from twitter.
+        // We just skip a beat and collect the messages on the next run.
+      }
 
       await utils.sleep(12000)
-      sinceId = tweets.length > 0 ? tweets[0].id : sinceId
       this.getMentions(sinceId)
     })
   }
