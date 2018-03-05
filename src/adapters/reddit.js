@@ -128,7 +128,7 @@ class Reddit extends Adapter {
     await callReddit('composeMessage', {
       to: uniqueId,
       subject: 'XLM Withdrawal failed',
-      text: formatMessage(`I could not withdraw, because of an unknown error. Please try again. [Contact the dev team](https://github.com/shredding/stellar-bot/issues/new) if the error persists.`)
+      text: formatMessage(`I could not withdraw. The given address is not a valid stellar address.`)
     })
   }
 
